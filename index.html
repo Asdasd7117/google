@@ -29,18 +29,29 @@
         #openWindowButton:hover {
             background-color: #45a049;
         }
+        #windowCountDisplay {
+            position: fixed;
+            top: 50px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 16px;
+            color: #333;
+        }
     </style>
 </head>
 <body>
     <button id="openWindowButton" onclick="openNextWindow()">فتح نافذة جديدة</button>
+    <div id="windowCountDisplay">عدد النوافذ المفتوحة: 0</div>
 
     <script>
         let windowCount = 0;
 
         function openNextWindow() {
             // تحديد أبعاد النافذة بناءً على حجم الشاشة
-            const width = Math.min(400, window.screen.width / 4 - 20); // عرض النافذة (تقريبًا ربع الشاشة)
-            const height = Math.min(600, window.screen.height / 2 - 50); // ارتفاع النافذة (نصف الشاشة تقريبًا)
+            const maxWidth = window.screen.width;
+            const maxHeight = window.screen.height;
+            const width = Math.min(400, maxWidth / 4 - 20); // عرض النافذة (ربع الشاشة تقريبًا)
+            const height = Math.min(600, maxHeight / 2 - 50); // ارتفاع النافذة (نصف الشاشة تقريبًا)
 
             // حساب الموضع بناءً على عدد النوافذ (4 نوافذ في السطر)
             const row = Math.floor(windowCount / 4);
@@ -49,9 +60,13 @@
             const top = row * (height + 10); // مسافة 10 بكسل بين الصفوف
 
             // فتح النافذة الجديدة
-            window.open('https://www.google.com', '_blank', `width=${width},height=${height},left=${left},top=${top}`);
-
-            windowCount++; // زيادة العداد
+            const newWindow = window.open('https://www.google.com', '_blank', `width=${width},height=${height},left=${left},top=${top}`);
+            if (newWindow) {
+                windowCount++;
+                document.getElementById('windowCountDisplay').textContent = `عدد النوافذ المفتوحة: ${windowCount}`;
+            } else {
+                alert('فشل في فتح النافذة! تأكد من تفعيل النوافذ المنبثقة.');
+            }
         }
     </script>
 </body>
