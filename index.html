@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>فتح نوافذ جوجل</title>
+    <title>فتح نوافذ جوجل للجوال</title>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -34,7 +34,7 @@
             top: 50px;
             left: 50%;
             transform: translateX(-50%);
-            font-size: 16px;
+            font-size: 14px;
             color: #333;
         }
     </style>
@@ -47,17 +47,17 @@
         let windowCount = 0;
 
         function openNextWindow() {
-            // تحديد أبعاد النافذة بناءً على حجم الشاشة
+            // تحديد أبعاد النافذة مناسبة للجوال
             const maxWidth = window.screen.width;
             const maxHeight = window.screen.height;
-            const width = Math.min(400, maxWidth / 4 - 20); // عرض النافذة (ربع الشاشة تقريبًا)
-            const height = Math.min(600, maxHeight / 2 - 50); // ارتفاع النافذة (نصف الشاشة تقريبًا)
+            const width = Math.min(160, maxWidth / 2 - 10); // عرض صغير (نصف الشاشة تقريبًا)
+            const height = Math.min(240, maxHeight / 4 - 10); // ارتفاع صغير (ربع الشاشة تقريبًا)
 
-            // حساب الموضع بناءً على عدد النوافذ (4 نوافذ في السطر)
-            const row = Math.floor(windowCount / 4);
-            const col = windowCount % 4;
-            const left = col * (width + 10); // مسافة 10 بكسل بين النوافذ
-            const top = row * (height + 10); // مسافة 10 بكسل بين الصفوف
+            // حساب الموضع بناءً على عدد النوافذ (2 نافذة في السطر)
+            const row = Math.floor(windowCount / 2);
+            const col = windowCount % 2;
+            const left = col * (width + 5); // مسافة 5 بكسل بين النوافذ
+            const top = row * (height + 5); // مسافة 5 بكسل بين الصفوف
 
             // فتح النافذة الجديدة
             const newWindow = window.open('https://www.google.com', '_blank', `width=${width},height=${height},left=${left},top=${top}`);
