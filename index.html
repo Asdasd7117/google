@@ -58,9 +58,13 @@
                 return;
             }
 
-            // فتح النوافذ بناءً على العدد المحدد
+            // تحديد أبعاد النافذة بناءً على حجم الشاشة
+            const width = Math.min(400, window.screen.width - 50);
+            const height = Math.min(600, window.screen.height - 100);
+
+            // فتح النوافذ الحقيقية لجوجل
             for (let i = 0; i < windowCount; i++) {
-                window.open('https://www.google.com', '_blank');
+                window.open('https://www.google.com', '_blank', `width=${width},height=${height},left=${i * 25},top=${i * 25}`);
             }
         }
     </script>
