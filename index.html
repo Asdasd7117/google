@@ -62,9 +62,11 @@
             const width = Math.min(400, window.screen.width - 50);
             const height = Math.min(600, window.screen.height - 100);
 
-            // فتح النوافذ الحقيقية لجوجل
+            // فتح النوافذ بتأخير بين كل نافذة
             for (let i = 0; i < windowCount; i++) {
-                window.open('https://www.google.com', '_blank', `width=${width},height=${height},left=${i * 25},top=${i * 25}`);
+                setTimeout(() => {
+                    window.open('https://www.google.com', '_blank', `width=${width},height=${height},left=${i * 25},top=${i * 25}`);
+                }, i * 500); // تأخير 500 مللي ثانية بين كل نافذة
             }
         }
     </script>
