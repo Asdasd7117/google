@@ -35,9 +35,13 @@
             border: none;
             border-radius: 5px;
             cursor: pointer;
+            margin: 5px;
         }
         button:hover {
             background-color: #45a049;
+        }
+        #windowButtons {
+            margin-top: 20px;
         }
     </style>
 </head>
@@ -46,27 +50,33 @@
         <h2>فتح نوافذ جوجل</h2>
         <label for="windowCount">أدخل عدد النوافذ:</label>
         <input type="number" id="windowCount" min="1" placeholder="مثال: 3">
-        <button onclick="openGoogleWindows()">فتح النوافذ</button>
+        <button onclick="generateButtons()">إنشاء أزرار الفتح</button>
+        <div id="windowButtons"></div>
     </div>
 
     <script>
-        function openGoogleWindows() {
+        function generateButtons() {
             const windowCount = parseInt(document.getElementById('windowCount').value);
-            
+            const buttonContainer = document.getElementById('windowButtons');
+
             if (isNaN(windowCount) || windowCount < 1) {
                 alert('يرجى إدخال عدد صحيح أكبر من 0');
                 return;
             }
 
-            // تحديد أبعاد النافذة بناءً على حجم الشاشة
-            const width = Math.min(400, window.screen.width - 50);
-            const height = Math.min(600, window.screen.height - 100);
+            // مسح الأزرار السابقة
+            buttonContainer.innerHTML = '';
 
-            // فتح النوافذ بتأخير بين كل نافذة
+            // إنشاء زر لكل نافذة
             for (let i = 0; i < windowCount; i++) {
-                setTimeout(() => {
+                const button = document.createElement('button');
+                button.textContent = `فتح النافذة ${i + 1}`;
+                button.onclick = () => {
+                    const width = Math.min(400, window.screen.width - 50);
+                    const height = Math.min(600, window.screen.height - 100);
                     window.open('https://www.google.com', '_blank', `width=${width},height=${height},left=${i * 25},top=${i * 25}`);
-                }, i * 500); // تأخير 500 مللي ثانية بين كل نافذة
+                };
+                buttonContainer.appendChild(button);
             }
         }
     </script>
