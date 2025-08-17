@@ -1,20 +1,15 @@
 const express = require("express");
 const request = require("request");
 const { JSDOM } = require("jsdom");
+const path = require("path");
 
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// مساعدة لتحويل روابط نسبية إلى مطلقة
-function toAbsolute(base, rel) {
-  try {
-    return new URL(rel, base).toString();
-  } catch {
-    return rel;
-  }
-}
+// خدمة الملفات الثابتة
+app.use(express.static(path.join(__dirname, "public")));
 
-// بروكسي كامل
+// مسار البروكسي
 app.use("/search", (req, res) => {
   const url = "https://duckduckgo.com" + req.url;
 
@@ -25,25 +20,21 @@ app.use("/search", (req, res) => {
     const document = dom.window.document;
     const baseUrl = "https://duckduckgo.com";
 
-    // إعادة كتابة روابط <a>
+    // إعادة كتابة الروابط
     document.querySelectorAll("a[href]").forEach(a => {
-      const abs = toAbsolute(baseUrl, a.href);
+      const abs = new URL(a.href, baseUrl).toString();
       a.href = "/search" + abs.replace(baseUrl, "");
     });
-
-    // إعادة كتابة روابط <link href> و <script src> و <img src>
     document.querySelectorAll("[src]").forEach(el => {
-      const abs = toAbsolute(baseUrl, el.src);
+      const abs = new URL(el.src, baseUrl).toString();
       el.src = "/search" + abs.replace(baseUrl, "");
     });
     document.querySelectorAll("link[href]").forEach(el => {
-      const abs = toAbsolute(baseUrl, el.href);
+      const abs = new URL(el.href, baseUrl).toString();
       el.href = "/search" + abs.replace(baseUrl, "");
     });
-
-    // إعادة كتابة فورمات <form action>
     document.querySelectorAll("form[action]").forEach(f => {
-      const abs = toAbsolute(baseUrl, f.action);
+      const abs = new URL(f.action, baseUrl).toString();
       f.action = "/search" + abs.replace(baseUrl, "");
     });
 
@@ -56,5 +47,5 @@ app.use("/search", (req, res) => {
 });
 
 app.listen(PORT, () => {
-  console.log(`✅ Proxy running on http://localhost:${PORT}`);
+  console.log(`Proxy running on http://localhost:${PORT}`);
 });
