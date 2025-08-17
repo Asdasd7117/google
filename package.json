@@ -1,7 +1,7 @@
 {
   "name": "duckduckgo-proxy-windows",
   "version": "1.0.0",
-  "description": "Reverse proxy لعرض DuckDuckGo داخل مربعات قابلة للسحب والتكبير",
+  "description": "نوافذ بحث قابلة للسحب والتكبير عبر بروكسي DuckDuckGo",
   "main": "server.js",
   "scripts": {
     "start": "node server.js"
