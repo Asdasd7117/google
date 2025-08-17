@@ -1,15 +1,12 @@
 {
-  "name": "web-proxy",
+  "name": "web-browser-app",
   "version": "1.0.0",
-  "description": "نوافذ بحث عبر بروكسي داخلي يسمح بفتح أي موقع داخل المربعات",
-  "main": "server.js",
+  "description": "تطبيق بعرض Google داخل مربعات صغيرة باستخدام Electron",
+  "main": "main.js",
   "scripts": {
-    "start": "node server.js"
+    "start": "electron ."
   },
-  "author": "YourName",
-  "license": "MIT",
   "dependencies": {
-    "express": "^4.18.2",
-    "http-proxy-middleware": "^2.0.6"
+    "electron": "^26.0.0"
   }
 }
