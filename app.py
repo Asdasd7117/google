@@ -1,35 +1,36 @@
-from flask import Flask, request, render_template, Response
+from flask import Flask, render_template, request, Response
 import requests
 
 app = Flask(__name__)
 
-# بروكسي لفتح الروابط
-@app.route("/p")
+# بروكسي قوي يتجاوز X-Frame-Options
+@app.route("/proxy")
 def proxy():
-    target_url = request.args.get("url")
-    if not target_url:
-        return "❌ لا يوجد رابط"
+    url = request.args.get("url")
+    if not url:
+        return "❌ ضع رابط ?url=..."
+
+    if not url.startswith("http"):
+        url = "https://" + url
 
     try:
-        resp = requests.get(target_url, timeout=10, headers={
-            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)"
-        })
-        excluded_headers = ["content-encoding", "transfer-encoding", "connection"]
-        headers = [(name, value) for name, value in resp.headers.items() if name.lower() not in excluded_headers]
+        resp = requests.get(
+            url,
+            timeout=10,
+            headers={"User-Agent":"Mozilla/5.0 (Windows NT 10.0; Win64; x64)"}
+        )
+        excluded = ["content-encoding", "transfer-encoding", "connection",
+                    "x-frame-options", "content-security-policy"]
+        headers = [(name, value) for name, value in resp.headers.items() if name.lower() not in excluded]
+
         return Response(resp.content, resp.status_code, headers)
     except Exception as e:
-        return f"❌ خطأ أثناء الوصول: {str(e)}"
+        return f"❌ خطأ: {str(e)}"
 
-# الصفحة الرئيسية (مربعات البحث)
+# الصفحة الرئيسية مع المربعات
 @app.route("/")
 def home():
     return render_template("index.html")
 
-# صفحة بحث ثانية
-@app.route("/search")
-def search():
-    query = request.args.get("q", "")
-    return render_template("search.html", query=query)
-
 if __name__ == "__main__":
-    app.run(debug=True)
+    app.run(host="0.0.0.0", port=5000, debug=True)
