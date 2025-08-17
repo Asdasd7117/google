@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>عرض نوافذ جوجل محاكاة داخل البرنامج</title>
+    <title>عرض نوافذ جوجل حقيقية</title>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -27,9 +27,6 @@
             cursor: pointer;
             z-index: 1000;
         }
-        #openWindowButton:hover {
-            background-color: #45a049;
-        }
         #windowCountDisplay {
             position: fixed;
             top: 50px;
@@ -38,18 +35,6 @@
             font-size: 14px;
             color: #333;
         }
-        #errorDisplay {
-            position: fixed;
-            top: 80px;
-            left: 50%;
-            transform: translateX(-50%);
-            font-size: 14px;
-            color: #d32f2f;
-            background-color: #ffebee;
-            padding: 5px 10px;
-            border-radius: 5px;
-            display: none;
-        }
         .window-container {
             display: flex;
             flex-wrap: wrap;
@@ -57,52 +42,40 @@
             padding: 10px;
         }
         .google-window {
-            width: 160px;
-            height: 240px;
+            width: 360px;
+            height: 500px;
             margin: 5px;
             border: 1px solid #ccc;
-            background-color: #202124;
-            color: #e8eaed;
+            border-radius: 8px;
             overflow: hidden;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
+        }
+        .google-window iframe {
+            width: 100%;
+            height: 100%;
+            border: none;
         }
     </style>
 </head>
 <body>
     <button id="openWindowButton" onclick="openNextWindow()">فتح نافذة جديدة</button>
     <div id="windowCountDisplay">عدد النوافذ المفتوحة: 0</div>
-    <div id="errorDisplay"></div>
     <div class="window-container" id="windowContainer"></div>
 
     <script>
         let windowCount = 0;
 
         function openNextWindow() {
-            const errorDisplay = document.getElementById('errorDisplay');
-            errorDisplay.style.display = 'none';
-            errorDisplay.textContent = '';
-
             const windowContainer = document.getElementById('windowContainer');
 
-            try {
-                const windowDiv = document.createElement('div');
-                windowDiv.className = 'google-window';
-                windowDiv.innerHTML = `
-                    <h2 style="font-size: 24px;">Google</h2>
-                    <input type="text" style="width: 80%; padding: 5px; margin: 10px 0; border-radius: 5px;" placeholder="البحث...">
-                    <div style="font-size: 12px;">English | العربية</div>
-                `;
-                windowContainer.appendChild(windowDiv);
+            const windowDiv = document.createElement('div');
+            windowDiv.className = 'google-window';
+            windowDiv.innerHTML = `
+                <iframe src="https://www.google.com" title="Google"></iframe>
+            `;
+            windowContainer.appendChild(windowDiv);
 
-                windowCount++;
-                document.getElementById('windowCountDisplay').textContent = `عدد النوافذ المفتوحة: ${windowCount}`;
-            } catch (error) {
-                errorDisplay.textContent = `خطأ: ${error.message}`;
-                errorDisplay.style.display = 'block';
-            }
+            windowCount++;
+            document.getElementById('windowCountDisplay').textContent = `عدد النوافذ المفتوحة: ${windowCount}`;
         }
     </script>
 </body>
