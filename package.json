@@ -1,7 +1,7 @@
 {
-  "name": "reverse-proxy-ddg",
+  "name": "duckduckgo-proxy-windows",
   "version": "1.0.0",
-  "description": "Reverse proxy with link/form rewriting to allow embedding search in iframes",
+  "description": "Reverse proxy لعرض DuckDuckGo داخل مربعات قابلة للسحب والتكبير",
   "main": "server.js",
   "scripts": {
     "start": "node server.js"
@@ -10,10 +10,8 @@
     "node": ">=18"
   },
   "dependencies": {
-    "axios": "^1.7.2",
-    "cheerio": "^1.0.0",
-    "compression": "^1.7.4",
     "express": "^4.19.2",
-    "morgan": "^1.10.0"
+    "request": "^2.88.2",
+    "jsdom": "^22.1.0"
   }
 }
