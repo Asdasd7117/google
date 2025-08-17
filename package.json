@@ -1,12 +1,19 @@
 {
-  "name": "google-proxy",
+  "name": "reverse-proxy-ddg",
   "version": "1.0.0",
+  "description": "Reverse proxy with link/form rewriting to allow embedding search in iframes",
   "main": "server.js",
   "scripts": {
     "start": "node server.js"
   },
+  "engines": {
+    "node": ">=18"
+  },
   "dependencies": {
-    "express": "^4.18.2",
-    "http-proxy-middleware": "^2.0.6"
+    "axios": "^1.7.2",
+    "cheerio": "^1.0.0",
+    "compression": "^1.7.4",
+    "express": "^4.19.2",
+    "morgan": "^1.10.0"
   }
 }
