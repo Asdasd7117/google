@@ -20,22 +20,34 @@ app.use("/search", (req, res) => {
     const document = dom.window.document;
     const baseUrl = "https://duckduckgo.com";
 
-    // إعادة كتابة الروابط
+    // إعادة كتابة روابط <a>
     document.querySelectorAll("a[href]").forEach(a => {
-      const abs = new URL(a.href, baseUrl).toString();
-      a.href = "/search" + abs.replace(baseUrl, "");
+      try {
+        const abs = new URL(a.href, baseUrl).toString();
+        a.href = "/search" + abs.replace(baseUrl, "");
+      } catch {}
     });
+
+    // إعادة كتابة روابط [src] و<link href>
     document.querySelectorAll("[src]").forEach(el => {
-      const abs = new URL(el.src, baseUrl).toString();
-      el.src = "/search" + abs.replace(baseUrl, "");
+      try {
+        const abs = new URL(el.src, baseUrl).toString();
+        el.src = "/search" + abs.replace(baseUrl, "");
+      } catch {}
     });
     document.querySelectorAll("link[href]").forEach(el => {
-      const abs = new URL(el.href, baseUrl).toString();
-      el.href = "/search" + abs.replace(baseUrl, "");
+      try {
+        const abs = new URL(el.href, baseUrl).toString();
+        el.href = "/search" + abs.replace(baseUrl, "");
+      } catch {}
     });
+
+    // إعادة كتابة فورمات <form action>
     document.querySelectorAll("form[action]").forEach(f => {
-      const abs = new URL(f.action, baseUrl).toString();
-      f.action = "/search" + abs.replace(baseUrl, "");
+      try {
+        const abs = new URL(f.action, baseUrl).toString();
+        f.action = "/search" + abs.replace(baseUrl, "");
+      } catch {}
     });
 
     // السماح بالعرض داخل iframe
@@ -47,5 +59,5 @@ app.use("/search", (req, res) => {
 });
 
 app.listen(PORT, () => {
-  console.log(`Proxy running on http://localhost:${PORT}`);
+  console.log(`✅ Proxy running on http://localhost:${PORT}`);
 });
