@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>عرض نوافذ جوجل داخل البرنامج</title>
+    <title>عرض نوافذ جوجل محاكاة داخل البرنامج</title>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -61,12 +61,13 @@
             height: 240px;
             margin: 5px;
             border: 1px solid #ccc;
+            background-color: #202124;
+            color: #e8eaed;
             overflow: hidden;
-        }
-        iframe {
-            width: 100%;
-            height: 100%;
-            border: none;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
         }
     </style>
 </head>
@@ -87,22 +88,17 @@
             const windowContainer = document.getElementById('windowContainer');
 
             try {
-                // إنشاء عنصر جديد للنافذة
                 const windowDiv = document.createElement('div');
                 windowDiv.className = 'google-window';
-                const iframe = document.createElement('iframe');
-                iframe.src = 'https://www.google.com'; // رابط جوجل
-                windowDiv.appendChild(iframe);
+                windowDiv.innerHTML = `
+                    <h2 style="font-size: 24px;">Google</h2>
+                    <input type="text" style="width: 80%; padding: 5px; margin: 10px 0; border-radius: 5px;" placeholder="البحث...">
+                    <div style="font-size: 12px;">English | العربية</div>
+                `;
                 windowContainer.appendChild(windowDiv);
 
                 windowCount++;
                 document.getElementById('windowCountDisplay').textContent = `عدد النوافذ المفتوحة: ${windowCount}`;
-
-                // التحقق من تحميل الإطار (اختياري، قد لا يعمل دائمًا بسبب سياسات CORS)
-                iframe.onload = () => console.log(`النافذة ${windowCount} تم تحميلها`);
-                iframe.onerror = () => {
-                    throw new Error('فشل في تحميل صفحة جوجل! قد تكون هناك قيود أمان (CORS).');
-                };
             } catch (error) {
                 errorDisplay.textContent = `خطأ: ${error.message}`;
                 errorDisplay.style.display = 'block';
