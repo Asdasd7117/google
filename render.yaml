@@ -1,9 +1,6 @@
 services:
   - type: web
     name: flask-proxy-browser
-    env: python
-    buildCommand: |
-      pip install -r requirements.txt
-      playwright install chromium
-    startCommand: "gunicorn app:app"
+    env: docker
+    dockerfilePath: Dockerfile
     plan: free
