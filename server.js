@@ -1,19 +1,21 @@
 const express = require("express");
 const { createProxyMiddleware } = require("http-proxy-middleware");
-const path = require("path");
-
 const app = express();
 
-// فتح واجهة index.html
+// خدمة الواجهة الثابتة
 app.use(express.static("public"));
 
-// بروكسي لجوجل
+// بروكسي لجميع روابط Google
 app.use("/proxy", createProxyMiddleware({
     target: "https://www.google.com",
     changeOrigin: true,
     pathRewrite: { "^/proxy": "" },
     onProxyReq: (proxyReq, req, res) => {
         proxyReq.setHeader('User-Agent', 'Mozilla/5.0');
+    },
+    // إعادة توجيه كل الروابط داخل iframe
+    router: function(req) {
+        return "https://www.google.com";
     }
 }));
 
