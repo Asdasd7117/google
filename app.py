@@ -1,9 +1,8 @@
 from flask import Flask, render_template, request, Response
-import requests
+from playwright.sync_api import sync_playwright
 
 app = Flask(__name__)
 
-# بروكسي قوي يتجاوز X-Frame-Options
 @app.route("/proxy")
 def proxy():
     url = request.args.get("url")
@@ -14,20 +13,16 @@ def proxy():
         url = "https://" + url
 
     try:
-        resp = requests.get(
-            url,
-            timeout=10,
-            headers={"User-Agent":"Mozilla/5.0 (Windows NT 10.0; Win64; x64)"}
-        )
-        excluded = ["content-encoding", "transfer-encoding", "connection",
-                    "x-frame-options", "content-security-policy"]
-        headers = [(name, value) for name, value in resp.headers.items() if name.lower() not in excluded]
-
-        return Response(resp.content, resp.status_code, headers)
+        with sync_playwright() as p:
+            browser = p.chromium.launch()
+            page = browser.new_page()
+            page.goto(url, timeout=15000)
+            content = page.content()
+            browser.close()
+            return Response(content, mimetype="text/html")
     except Exception as e:
-        return f"❌ خطأ: {str(e)}"
+        return f"❌ خطأ أثناء الوصول للرابط: {str(e)}"
 
-# الصفحة الرئيسية مع المربعات
 @app.route("/")
 def home():
     return render_template("index.html")
