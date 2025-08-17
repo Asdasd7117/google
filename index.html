@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>فتح نوافذ جوجل للجوال</title>
+    <title>فتح نوافذ جوجل للجوال مع عرض الأخطاء</title>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -37,16 +37,34 @@
             font-size: 14px;
             color: #333;
         }
+        #errorDisplay {
+            position: fixed;
+            top: 80px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 14px;
+            color: #d32f2f; /* لون أحمر للأخطاء */
+            background-color: #ffebee;
+            padding: 5px 10px;
+            border-radius: 5px;
+            display: none; /* مخفي افتراضيًا */
+        }
     </style>
 </head>
 <body>
     <button id="openWindowButton" onclick="openNextWindow()">فتح نافذة جديدة</button>
     <div id="windowCountDisplay">عدد النوافذ المفتوحة: 0</div>
+    <div id="errorDisplay"></div>
 
     <script>
         let windowCount = 0;
 
         function openNextWindow() {
+            // مسح أي رسالة خطأ سابقة
+            const errorDisplay = document.getElementById('errorDisplay');
+            errorDisplay.style.display = 'none';
+            errorDisplay.textContent = '';
+
             // تحديد أبعاد النافذة مناسبة للجوال
             const maxWidth = window.screen.width;
             const maxHeight = window.screen.height;
@@ -59,13 +77,18 @@
             const left = col * (width + 5); // مسافة 5 بكسل بين النوافذ
             const top = row * (height + 5); // مسافة 5 بكسل بين الصفوف
 
-            // فتح النافذة الجديدة
-            const newWindow = window.open('https://www.google.com', '_blank', `width=${width},height=${height},left=${left},top=${top}`);
-            if (newWindow) {
-                windowCount++;
-                document.getElementById('windowCountDisplay').textContent = `عدد النوافذ المفتوحة: ${windowCount}`;
-            } else {
-                alert('فشل في فتح النافذة! تأكد من تفعيل النوافذ المنبثقة.');
+            try {
+                // فتح النافذة الجديدة
+                const newWindow = window.open('https://www.google.com', '_blank', `width=${width},height=${height},left=${left},top=${top}`);
+                if (newWindow) {
+                    windowCount++;
+                    document.getElementById('windowCountDisplay').textContent = `عدد النوافذ المفتوحة: ${windowCount}`;
+                } else {
+                    throw new Error('فشل في فتح النافذة! قد تكون النوافذ المنبثقة محظورة.');
+                }
+            } catch (error) {
+                errorDisplay.textContent = `خطأ: ${error.message}`;
+                errorDisplay.style.display = 'block';
             }
         }
     </script>
