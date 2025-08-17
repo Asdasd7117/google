@@ -1,0 +1,17 @@
+{
+  "name": "iframe-proxy-9grid",
+  "version": "1.0.0",
+  "description": "Proxy with HTML rewriting to allow embedding pages in iframes (grid 3x3)",
+  "type": "module",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "cheerio": "^1.0.0-rc.12",
+    "express": "^4.18.2",
+    "node-fetch": "^3.4.1",
+    "mime-types": "^2.1.35",
+    "helmet": "^6.0.1"
+  }
+}
