@@ -13,12 +13,12 @@ input[type="text"] { flex: 1; min-width: 180px; padding: 6px; border: 1px solid 
 button { padding: 6px 10px; border: 0; border-radius: 8px; cursor: pointer; font-size: 12px; box-shadow: 0 2px 6px rgba(0,0,0,.08); }
 .btn { background: #4caf50; color: #fff; }
 .btn:hover { filter: brightness(0.95); }
-.grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; padding: 8px; } /* 3 مربعات في السطر */
+.grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; padding: 8px; }
 .card { background: #fff; border-radius: 12px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,.06); display: flex; flex-direction: column; }
 .card-header { padding: 4px 6px; display: flex; gap: 4px; align-items: center; border-bottom: 1px solid #eee; }
 .card-header input { flex: 1; min-width: 80px; font-size: 12px; padding: 4px; }
 .card-header button { font-size: 12px; padding: 4px 8px; background: #2196f3; color: white; }
-iframe { width: 100%; height: 250px; border: 0; } /* تصغير ارتفاع النافذة */
+iframe { width: 100%; height: 250px; border: 0; }
 .empty { text-align: center; color: #777; padding: 20px 0; }
 </style>
 </head>
@@ -77,7 +77,16 @@ function createWindow(initialQuery = "") {
   frame.loading = "lazy";
 
   function load(query) {
-    const url = query ? buildSearchUrl(query) : SEARCH_HOME;
+    let url;
+    if (!query) {
+      url = SEARCH_HOME;
+    } else if (/^https?:\/\//i.test(query)) {
+      // إذا كان رابط كامل
+      url = query;
+    } else {
+      // نص للبحث
+      url = buildSearchUrl(query);
+    }
     frame.src = PROXY_BASE + encodeURIComponent(url);
   }
 
