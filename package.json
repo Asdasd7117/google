@@ -2,7 +2,7 @@
   "name": "web-browser-app",
   "version": "1.0.0",
   "description": "تطبيق بعرض Google داخل مربعات صغيرة باستخدام Electron",
-  "main": "main.js",
+  "main": "server.js",
   "scripts": {
     "start": "electron ."
   },
