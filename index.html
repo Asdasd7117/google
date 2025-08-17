@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="ar">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>٩ مربعات PWA</title>
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#2196F3">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<div class="grid-container">
+  <!-- ٩ مربعات -->
+  <div class="iframe-container"><iframe src="/proxy?url=https://www.ecsc-expat.sy/faq"></iframe></div>
+  <div class="iframe-container"><iframe src="/proxy?url=https://www.ecsc-expat.sy/faq"></iframe></div>
+  <div class="iframe-container"><iframe src="/proxy?url=https://www.ecsc-expat.sy/faq"></iframe></div>
+  <div class="iframe-container"><iframe src="/proxy?url=https://www.ecsc-expat.sy/faq"></iframe></div>
+  <div class="iframe-container"><iframe src="/proxy?url=https://www.ecsc-expat.sy/faq"></iframe></div>
+  <div class="iframe-container"><iframe src="/proxy?url=https://www.ecsc-expat.sy/faq"></iframe></div>
+  <div class="iframe-container"><iframe src="/proxy?url=https://www.ecsc-expat.sy/faq"></iframe></div>
+  <div class="iframe-container"><iframe src="/proxy?url=https://www.ecsc-expat.sy/faq"></iframe></div>
+  <div class="iframe-container"><iframe src="/proxy?url=https://www.ecsc-expat.sy/faq"></iframe></div>
+</div>
+
+<script>
+  // تسجيل Service Worker لتفعيل PWA
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('service-worker.js').then(() => {
+      console.log('Service Worker Registered');
+    });
+  }
+</script>
+
+</body>
+</html>
