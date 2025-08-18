@@ -1,7 +1,16 @@
-self.addEventListener('install', event => {
-  console.log('Service Worker: Installed');
+self.addEventListener("install", e => {
+  e.waitUntil(
+    caches.open("ecsc-cache").then(cache => {
+      return cache.addAll([
+        "/",
+        "/index.html"
+      ]);
+    })
+  );
 });
 
-self.addEventListener('fetch', event => {
-  event.respondWith(fetch(event.request));
+self.addEventListener("fetch", e => {
+  e.respondWith(
+    caches.match(e.request).then(response => response || fetch(e.request))
+  );
 });
