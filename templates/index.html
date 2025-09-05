@@ -1,59 +1,53 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-<meta charset="UTF-8">
-<title>Chrome Tabs Sync</title>
-<script src="https://cdn.socket.io/4.6.1/socket.io.min.js"></script>
+    <title>Chrome Sync</title>
 </head>
 <body>
-<h1>Chrome Tabs Sync</h1>
-<input id="mainInput" placeholder="اكتب هنا ليتم المزامنة">
-<button id="exampleBtn">زر المثال</button>
-<button id="syncBtn">تفعيل المزامنة</button>
+    <h2>Chrome Sync Controller</h2>
+    <input id="urlInput" placeholder="ضع رابط الموقع هنا" style="width: 300px;">
+    <button id="openTabsBtn">فتح 6 تبويبات</button>
+    <button id="syncBtn">تشغيل المزامنة</button>
 
-<script>
-let tabs = [];
-let syncActive = false;
+    <script>
+        let tabs = [];
+        let sync = false;
 
-// فتح 6 تبويبات جديدة
-for(let i=0; i<6; i++){
-    tabs.push(window.open(window.location.href, `tab${i}`));
-}
+        document.getElementById("openTabsBtn").addEventListener("click", () => {
+            const url = document.getElementById("urlInput").value;
+            if(!url) return alert("ضع رابط الموقع أولاً");
 
-const socket = io();
+            tabs.forEach(t => t.close());
+            tabs = [];
 
-document.getElementById("syncBtn").addEventListener("click", () => {
-    syncActive = !syncActive;
-    document.getElementById("syncBtn").textContent = syncActive ? "ايقاف المزامنة" : "تفعيل المزامنة";
-});
-
-// مزامنة النصوص
-document.getElementById("mainInput").addEventListener("input", (e) => {
-    if(syncActive){
-        socket.emit("sync_event", {type:"text", value:e.target.value});
-    }
-});
-
-// مزامنة الزر
-document.getElementById("exampleBtn").addEventListener("click", () => {
-    if(syncActive){
-        socket.emit("sync_event", {type:"click", id:"exampleBtn"});
-    }
-});
-
-// استقبال التحديثات في باقي التبويبات
-socket.on("update_tabs", (data) => {
-    if(!syncActive) return;
-    tabs.forEach(tab => {
-        try {
-            if(data.type==="text"){
-                tab.document.getElementById("mainInput").value = data.value;
-            } else if(data.type==="click"){
-                tab.document.getElementById(data.id)?.click();
+            for(let i=0; i<6; i++){
+                tabs.push(window.open(url, `tab${i}`));
             }
-        } catch {}
-    });
-});
-</script>
+        });
+
+        document.getElementById("syncBtn").addEventListener("click", () => {
+            sync = !sync;
+            document.getElementById("syncBtn").innerText = sync ? "إيقاف المزامنة" : "تشغيل المزامنة";
+        });
+
+        // مزامنة النصوص والأزرار
+        document.addEventListener("click", (e) => {
+            if(!sync) return;
+            tabs.forEach(t => {
+                try {
+                    t.document.activeElement.value = document.activeElement.value;
+                } catch{}
+            });
+        });
+
+        document.addEventListener("input", (e) => {
+            if(!sync) return;
+            tabs.forEach(t => {
+                try {
+                    t.document.activeElement.value = document.activeElement.value;
+                } catch{}
+            });
+        });
+    </script>
 </body>
 </html>
