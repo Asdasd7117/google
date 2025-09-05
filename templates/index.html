@@ -1,30 +1,59 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Chrome Sync</title>
+    <title>Tab Sync</title>
+    <script>
+        let firstTab = true;  // لتحديد التبويبة الأولى
+        let textInput = "";
+
+        function updateState(clicked=false) {
+            if (!firstTab) return; // فقط التبويبة الأولى ترسل التحديث
+            fetch("/update", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ text: textInput, clicked })
+            });
+        }
+
+        async function syncLoop() {
+            const res = await fetch("/state");
+            const data = await res.json();
+            if (!firstTab) {
+                document.getElementById("mainInput").value = data.text;
+                if (data.clicked) {
+                    document.getElementById("actionBtn").click();
+                }
+            }
+        }
+
+        function openTabs() {
+            const url = document.getElementById("urlInput").value;
+            if (!url) return alert("ادخل رابط الموقع!");
+            window.open(url, "_self"); // تبويبة أولى
+            for (let i=0;i<5;i++) window.open(url, "_blank"); // باقي التبويبات
+        }
+
+        document.addEventListener("DOMContentLoaded", () => {
+            setInterval(syncLoop, 200); // تزامن كل 200ms
+
+            const inputEl = document.getElementById("mainInput");
+            inputEl.addEventListener("input", e => {
+                textInput = e.target.value;
+                updateState();
+            });
+
+            document.getElementById("actionBtn").addEventListener("click", () => {
+                updateState(true);
+            });
+        });
+    </script>
 </head>
 <body>
-<h1>التبويب الأول</h1>
-<input type="text" id="inputText" placeholder="اكتب هنا">
-<button onclick="sendClick()">نقر</button>
-
-<script>
-function sendClick() {
-    fetch("/update", {
-        method:"POST",
-        headers: {"Content-Type":"application/json"},
-        body: JSON.stringify({click:true})
-    });
-}
-
-// إرسال النص عند الكتابة
-document.getElementById("inputText").addEventListener("input", function(){
-    fetch("/update", {
-        method:"POST",
-        headers: {"Content-Type":"application/json"},
-        body: JSON.stringify({text:this.value})
-    });
-});
-</script>
+    <h2>Tab Sync Controller</h2>
+    <input id="urlInput" type="text" placeholder="ادخل رابط الموقع">
+    <button onclick="openTabs()">افتح التبويبات</button>
+    <br><br>
+    <input id="mainInput" type="text" placeholder="اكتب هنا">
+    <button id="actionBtn">زر المزامنة</button>
 </body>
 </html>
