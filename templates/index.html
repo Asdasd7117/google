@@ -1,0 +1,60 @@
+<!-- templates/index.html -->
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Chrome Sync Web</title>
+    <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
+</head>
+<body>
+    <button id="open_tabs">فتح 10 تبويبات</button>
+    <button id="toggle_sync">تشغيل/إيقاف المزامنة</button>
+    <input type="text" id="text_input" placeholder="اكتب هنا">
+    <button class="sync_btn" data-action="A">زر A</button>
+    <button class="sync_btn" data-action="B">زر B</button>
+    <button class="sync_btn" data-action="C">زر C</button>
+
+    <script>
+        const socket = io();
+        let sync = false;
+
+        document.getElementById('open_tabs').onclick = () => {
+            const url = window.location.href;
+            for (let i = 0; i < 10; i++) {
+                window.open(url, '_blank');
+            }
+        };
+
+        document.getElementById('toggle_sync').onclick = () => {
+            socket.emit('toggle_sync');
+        };
+
+        socket.on('sync_status', data => {
+            sync = data.enabled;
+            alert(sync ? "المزامنة مفعلة" : "المزامنة متوقفة");
+        });
+
+        // مزامنة النصوص
+        const input = document.getElementById('text_input');
+        input.addEventListener('input', e => {
+            if (sync) {
+                socket.emit('action', {type:'input', value: e.target.value});
+            }
+        });
+
+        socket.on('action', data => {
+            if (data.type === 'input') input.value = data.value;
+            if (data.type === 'button') document.querySelector(`button[data-action="${data.value}"]`).click();
+        });
+
+        // مزامنة الأزرار
+        document.querySelectorAll('.sync_btn').forEach(btn => {
+            btn.addEventListener('click', e => {
+                if (sync) {
+                    socket.emit('action', {type:'button', value: btn.dataset.action});
+                }
+                alert("ضغطت الزر: " + btn.dataset.action); // مثال تفاعل
+            });
+        });
+    </script>
+</body>
+</html>
