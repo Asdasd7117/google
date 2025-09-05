@@ -1,29 +1,25 @@
-from flask import Flask, render_template, request
+# app.py
+from flask import Flask, render_template
 from flask_socketio import SocketIO, emit
 
 app = Flask(__name__)
-app.config['SECRET_KEY'] = 'secret!'
 socketio = SocketIO(app)
 
-# لتخزين النصوص المشتركة بين التبويبات
-shared_text = ""
-
-# صفحة رئيسية
-@app.route("/")
+@app.route('/')
 def index():
-    return render_template("index.html", text=shared_text)
+    # ضع الرابط هنا الذي تريد فتحه في كل iframe
+    url = "https://www.google.com"
+    return render_template("index.html", url=url)
 
-# استقبال النصوص الجديدة من أي مستخدم
-@socketio.on('update_text')
-def handle_update_text(data):
-    global shared_text
-    shared_text = data
-    emit('sync_text', shared_text, broadcast=True)  # إرسال النص لجميع المتصلين
+# استقبال النصوص من التبويب الأول وبثها للبقية
+@socketio.on('text_update')
+def handle_text(data):
+    emit('update_text', data, broadcast=True)
 
-# استقبال أمر الزر لتشغيل/إيقاف المزامنة
-@socketio.on('toggle_sync')
-def handle_toggle_sync(data):
-    emit('sync_status', data, broadcast=True)
+# استقبال ضغط الزر من التبويب الأول وبثه للبقية
+@socketio.on('button_click')
+def handle_button(data):
+    emit('sync_button', data, broadcast=True)
 
-if __name__ == "__main__":
-    socketio.run(app, host="0.0.0.0", port=5000, allow_unsafe_werkzeug=True)
+if __name__ == '__main__':
+    socketio.run(app, host='0.0.0.0', port=5000)
