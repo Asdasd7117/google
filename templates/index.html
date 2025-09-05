@@ -1,59 +1,59 @@
-<!-- templates/index.html -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>Chrome Sync Web</title>
-<script src="https://cdn.socket.io/4.7.1/socket.io.min.js"></script>
-<style>
-  iframe { width: 30%; height: 300px; margin: 5px; float: left; }
-  #controls { clear: both; margin-top: 20px; }
-</style>
+<title>Chrome Tabs Sync</title>
+<script src="https://cdn.socket.io/4.6.1/socket.io.min.js"></script>
 </head>
 <body>
-
-<div id="iframes">
-  {% for i in range(6) %}
-  <iframe src="{{ url }}" id="tab{{ i }}"></iframe>
-  {% endfor %}
-</div>
-
-<div id="controls">
-  <input type="text" id="mainInput" placeholder="اكتب هنا…">
-  <button id="syncButton">تشغيل المزامنة</button>
-</div>
+<h1>Chrome Tabs Sync</h1>
+<input id="mainInput" placeholder="اكتب هنا ليتم المزامنة">
+<button id="exampleBtn">زر المثال</button>
+<button id="syncBtn">تفعيل المزامنة</button>
 
 <script>
-  const socket = io();
-  let syncing = false;
+let tabs = [];
+let syncActive = false;
 
-  const input = document.getElementById("mainInput");
-  const button = document.getElementById("syncButton");
+// فتح 6 تبويبات جديدة
+for(let i=0; i<6; i++){
+    tabs.push(window.open(window.location.href, `tab${i}`));
+}
 
-  button.onclick = () => {
-    syncing = !syncing;
-    button.textContent = syncing ? "إيقاف المزامنة" : "تشغيل المزامنة";
-    socket.emit('button_click', { syncing });
-  };
+const socket = io();
 
-  input.addEventListener("input", () => {
-    if (syncing) {
-      socket.emit('text_update', { text: input.value });
+document.getElementById("syncBtn").addEventListener("click", () => {
+    syncActive = !syncActive;
+    document.getElementById("syncBtn").textContent = syncActive ? "ايقاف المزامنة" : "تفعيل المزامنة";
+});
+
+// مزامنة النصوص
+document.getElementById("mainInput").addEventListener("input", (e) => {
+    if(syncActive){
+        socket.emit("sync_event", {type:"text", value:e.target.value});
     }
-  });
+});
 
-  // استقبال التغييرات من التبويبات الأخرى
-  socket.on('update_text', data => {
-    if (syncing && input.value !== data.text) {
-      input.value = data.text;
+// مزامنة الزر
+document.getElementById("exampleBtn").addEventListener("click", () => {
+    if(syncActive){
+        socket.emit("sync_event", {type:"click", id:"exampleBtn"});
     }
-  });
+});
 
-  socket.on('sync_button', data => {
-    syncing = data.syncing;
-    button.textContent = syncing ? "إيقاف المزامنة" : "تشغيل المزامنة";
-  });
+// استقبال التحديثات في باقي التبويبات
+socket.on("update_tabs", (data) => {
+    if(!syncActive) return;
+    tabs.forEach(tab => {
+        try {
+            if(data.type==="text"){
+                tab.document.getElementById("mainInput").value = data.value;
+            } else if(data.type==="click"){
+                tab.document.getElementById(data.id)?.click();
+            }
+        } catch {}
+    });
+});
 </script>
-
 </body>
 </html>
