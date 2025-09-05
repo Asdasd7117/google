@@ -1,48 +1,59 @@
+<!-- templates/index.html -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>Chrome Sync Controller</title>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.7.1/socket.io.min.js"></script>
+<title>Chrome Sync Web</title>
+<script src="https://cdn.socket.io/4.7.1/socket.io.min.js"></script>
+<style>
+  iframe { width: 30%; height: 300px; margin: 5px; float: left; }
+  #controls { clear: both; margin-top: 20px; }
+</style>
 </head>
 <body>
-<h2>Chrome Sync Controller</h2>
 
-<textarea id="textInput" rows="5" cols="50">{{ text }}</textarea>
-<br><br>
-<button id="syncButton">تشغيل المزامنة</button>
+<div id="iframes">
+  {% for i in range(6) %}
+  <iframe src="{{ url }}" id="tab{{ i }}"></iframe>
+  {% endfor %}
+</div>
+
+<div id="controls">
+  <input type="text" id="mainInput" placeholder="اكتب هنا…">
+  <button id="syncButton">تشغيل المزامنة</button>
+</div>
 
 <script>
-const socket = io();
+  const socket = io();
+  let syncing = false;
 
-// الزر لتشغيل/إيقاف المزامنة
-let syncActive = false;
-document.getElementById('syncButton').onclick = () => {
-    syncActive = !syncActive;
-    socket.emit('toggle_sync', syncActive);
-    document.getElementById('syncButton').innerText = syncActive ? "إيقاف المزامنة" : "تشغيل المزامنة";
-};
+  const input = document.getElementById("mainInput");
+  const button = document.getElementById("syncButton");
 
-// إرسال النص عند تغييره
-const textInput = document.getElementById('textInput');
-textInput.addEventListener('input', () => {
-    if (syncActive) {
-        socket.emit('update_text', textInput.value);
+  button.onclick = () => {
+    syncing = !syncing;
+    button.textContent = syncing ? "إيقاف المزامنة" : "تشغيل المزامنة";
+    socket.emit('button_click', { syncing });
+  };
+
+  input.addEventListener("input", () => {
+    if (syncing) {
+      socket.emit('text_update', { text: input.value });
     }
-});
+  });
 
-// استقبال النصوص المزامنة
-socket.on('sync_text', (data) => {
-    if (!textInput.matches(':focus')) {  // لا تغير النص أثناء الكتابة
-        textInput.value = data;
+  // استقبال التغييرات من التبويبات الأخرى
+  socket.on('update_text', data => {
+    if (syncing && input.value !== data.text) {
+      input.value = data.text;
     }
-});
+  });
 
-// استقبال حالة المزامنة من أي تبويب آخر
-socket.on('sync_status', (status) => {
-    syncActive = status;
-    document.getElementById('syncButton').innerText = syncActive ? "إيقاف المزامنة" : "تشغيل المزامنة";
-});
+  socket.on('sync_button', data => {
+    syncing = data.syncing;
+    button.textContent = syncing ? "إيقاف المزامنة" : "تشغيل المزامنة";
+  });
 </script>
+
 </body>
 </html>
