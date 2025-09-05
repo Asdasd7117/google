@@ -1,60 +1,48 @@
-<!-- templates/index.html -->
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-    <title>Chrome Sync Web</title>
-    <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
+<meta charset="UTF-8">
+<title>Chrome Sync Controller</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.7.1/socket.io.min.js"></script>
 </head>
 <body>
-    <button id="open_tabs">فتح 10 تبويبات</button>
-    <button id="toggle_sync">تشغيل/إيقاف المزامنة</button>
-    <input type="text" id="text_input" placeholder="اكتب هنا">
-    <button class="sync_btn" data-action="A">زر A</button>
-    <button class="sync_btn" data-action="B">زر B</button>
-    <button class="sync_btn" data-action="C">زر C</button>
+<h2>Chrome Sync Controller</h2>
 
-    <script>
-        const socket = io();
-        let sync = false;
+<textarea id="textInput" rows="5" cols="50">{{ text }}</textarea>
+<br><br>
+<button id="syncButton">تشغيل المزامنة</button>
 
-        document.getElementById('open_tabs').onclick = () => {
-            const url = window.location.href;
-            for (let i = 0; i < 10; i++) {
-                window.open(url, '_blank');
-            }
-        };
+<script>
+const socket = io();
 
-        document.getElementById('toggle_sync').onclick = () => {
-            socket.emit('toggle_sync');
-        };
+// الزر لتشغيل/إيقاف المزامنة
+let syncActive = false;
+document.getElementById('syncButton').onclick = () => {
+    syncActive = !syncActive;
+    socket.emit('toggle_sync', syncActive);
+    document.getElementById('syncButton').innerText = syncActive ? "إيقاف المزامنة" : "تشغيل المزامنة";
+};
 
-        socket.on('sync_status', data => {
-            sync = data.enabled;
-            alert(sync ? "المزامنة مفعلة" : "المزامنة متوقفة");
-        });
+// إرسال النص عند تغييره
+const textInput = document.getElementById('textInput');
+textInput.addEventListener('input', () => {
+    if (syncActive) {
+        socket.emit('update_text', textInput.value);
+    }
+});
 
-        // مزامنة النصوص
-        const input = document.getElementById('text_input');
-        input.addEventListener('input', e => {
-            if (sync) {
-                socket.emit('action', {type:'input', value: e.target.value});
-            }
-        });
+// استقبال النصوص المزامنة
+socket.on('sync_text', (data) => {
+    if (!textInput.matches(':focus')) {  // لا تغير النص أثناء الكتابة
+        textInput.value = data;
+    }
+});
 
-        socket.on('action', data => {
-            if (data.type === 'input') input.value = data.value;
-            if (data.type === 'button') document.querySelector(`button[data-action="${data.value}"]`).click();
-        });
-
-        // مزامنة الأزرار
-        document.querySelectorAll('.sync_btn').forEach(btn => {
-            btn.addEventListener('click', e => {
-                if (sync) {
-                    socket.emit('action', {type:'button', value: btn.dataset.action});
-                }
-                alert("ضغطت الزر: " + btn.dataset.action); // مثال تفاعل
-            });
-        });
-    </script>
+// استقبال حالة المزامنة من أي تبويب آخر
+socket.on('sync_status', (status) => {
+    syncActive = status;
+    document.getElementById('syncButton').innerText = syncActive ? "إيقاف المزامنة" : "تشغيل المزامنة";
+});
+</script>
 </body>
 </html>
