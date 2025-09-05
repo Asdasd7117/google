@@ -2,52 +2,30 @@
 <html>
 <head>
     <title>Chrome Sync</title>
+    <script>
+        function sendAction(type) {
+            let value = "";
+            if(type === "write") {
+                value = document.getElementById("inputText").value;
+            }
+            fetch("/sync", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ type: type, value: value })
+            });
+        }
+    </script>
 </head>
 <body>
-    <h2>Chrome Sync Controller</h2>
-    <input id="urlInput" placeholder="ضع رابط الموقع هنا" style="width: 300px;">
-    <button id="openTabsBtn">فتح 6 تبويبات</button>
-    <button id="syncBtn">تشغيل المزامنة</button>
-
-    <script>
-        let tabs = [];
-        let sync = false;
-
-        document.getElementById("openTabsBtn").addEventListener("click", () => {
-            const url = document.getElementById("urlInput").value;
-            if(!url) return alert("ضع رابط الموقع أولاً");
-
-            tabs.forEach(t => t.close());
-            tabs = [];
-
-            for(let i=0; i<6; i++){
-                tabs.push(window.open(url, `tab${i}`));
-            }
-        });
-
-        document.getElementById("syncBtn").addEventListener("click", () => {
-            sync = !sync;
-            document.getElementById("syncBtn").innerText = sync ? "إيقاف المزامنة" : "تشغيل المزامنة";
-        });
-
-        // مزامنة النصوص والأزرار
-        document.addEventListener("click", (e) => {
-            if(!sync) return;
-            tabs.forEach(t => {
-                try {
-                    t.document.activeElement.value = document.activeElement.value;
-                } catch{}
-            });
-        });
-
-        document.addEventListener("input", (e) => {
-            if(!sync) return;
-            tabs.forEach(t => {
-                try {
-                    t.document.activeElement.value = document.activeElement.value;
-                } catch{}
-            });
-        });
-    </script>
+    <h1>Chrome Sync Controller</h1>
+    <form method="post">
+        <input type="text" name="url" placeholder="أدخل رابط الموقع" required>
+        <button type="submit">فتح التبويبات</button>
+    </form>
+    <br>
+    <input type="text" id="inputText" placeholder="اكتب هنا">
+    <button onclick="sendAction('write')">مزامنة الكتابة</button>
+    <button onclick="sendAction('click')">مزامنة النقر</button>
+    <p>{{ message }}</p>
 </body>
 </html>
