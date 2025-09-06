@@ -1,49 +1,57 @@
-const express = require("express");
-const http = require("http");
-const { Server } = require("socket.io");
-const puppeteer = require("puppeteer");
+const express = require('express');
+const http = require('http');
+const { Server } = require('socket.io');
+const puppeteer = require('puppeteer-core');
+const chromeLauncher = require('chrome-launcher');
 
 const app = express();
 const server = http.createServer(app);
 const io = new Server(server);
 
-let browser, pages = [];
+app.use(express.static('public'));
 
-app.use(express.static("public")); // index.html موجود هنا
+let browser;
+let pages = [];
 
-io.on("connection", (socket) => {
-  console.log("Client connected");
+async function launchBrowser(url) {
+  const chromePath = await chromeLauncher.Launcher.getInstallations()[0];
+  browser = await puppeteer.launch({
+    executablePath: chromePath,
+    headless: false
+  });
+  pages = [];
+  for (let i = 0; i < 6; i++) {
+    const page = await browser.newPage();
+    await page.goto(url);
+    pages.push(page);
+  }
+}
 
-  socket.on("startSync", async (url) => {
-    if (!browser) {
-      browser = await puppeteer.launch({ headless: false });
-      pages = [];
-      // افتح 6 تبويبات
-      const page0 = await browser.newPage();
-      await page0.goto(url);
-      pages.push(page0);
-      for (let i = 1; i < 6; i++) {
-        const p = await browser.newPage();
-        await p.goto(url);
-        pages.push(p);
+io.on('connection', (socket) => {
+  console.log('Client connected');
+
+  socket.on('openTabs', async (url) => {
+    if (browser) await browser.close();
+    await launchBrowser(url);
+    socket.emit('tabsOpened', 6);
+  });
+
+  socket.on('syncEvent', async (event) => {
+    if (!pages.length) return;
+    // نفذ نفس الحدث على باقي التبويبات
+    for (let i = 1; i < pages.length; i++) {
+      try {
+        if (event.type === 'click') {
+          await pages[i].click(event.selector);
+        } else if (event.type === 'input') {
+          await pages[i].focus(event.selector);
+          await pages[i].keyboard.type(event.value);
+        }
+      } catch (err) {
+        console.log('Error syncing:', err.message);
       }
     }
   });
-
-  socket.on("keyEvent", async ({ key }) => {
-    // أرسل أي كتابة في التبويبة الأولى لباقي التبويبات
-    for (let i = 1; i < pages.length; i++) {
-      await pages[i].keyboard.press(key);
-    }
-  });
-
-  socket.on("clickEvent", async () => {
-    for (let i = 1; i < pages.length; i++) {
-      await pages[i].mouse.click(100, 100); // تعديل الإحداثيات حسب الحاجة
-    }
-  });
 });
 
-server.listen(10000, () => {
-  console.log("Server running on port 10000");
-});
+server.listen(10000, () => console.log('Server running on port 10000'));
