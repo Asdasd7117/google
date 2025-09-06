@@ -1,43 +1,43 @@
 <!DOCTYPE html>
 <html lang="ar">
 <head>
-  <meta charset="UTF-8">
-  <title>مزامنة التبويبات</title>
-  <script src="/socket.io/socket.io.js"></script>
+<meta charset="UTF-8">
+<title>Chrome Sync</title>
+<script src="/socket.io/socket.io.js"></script>
 </head>
 <body>
-  <h2>⚡ مزامنة التبويبات ⚡</h2>
-  <input type="text" id="url" placeholder="ادخل رابط الموقع">
-  <button id="start">تشغيل التبويبات</button>
-  <button id="sync">تشغيل المزامنة</button>
+<h2>تشغيل المزامنة</h2>
+<input type="text" id="urlInput" placeholder="ادخل الرابط هنا" style="width: 300px;">
+<button id="startTabs">تشغيل التبويبات</button>
+<button id="startSync">تشغيل المزامنة</button>
 
-  <script>
-    const socket = io();
-    let syncEnabled = false;
+<script>
+const socket = io();
 
-    document.getElementById("start").onclick = () => {
-      const url = document.getElementById("url").value;
-      socket.emit("startSync", url);
-    };
+// عند الضغط على زر تشغيل التبويبات
+document.getElementById('startTabs').addEventListener('click', () => {
+    const url = document.getElementById('urlInput').value;
+    if(url) {
+        socket.emit('startSync', url); // يرسل للرابط للسيرفر
+    } else {
+        alert("ادخل رابط أولاً");
+    }
+});
 
-    document.getElementById("sync").onclick = () => {
-      syncEnabled = !syncEnabled;
-      alert(syncEnabled ? "✅ المزامنة شغالة" : "⛔ المزامنة متوقفة");
-    };
+// عند الضغط على زر المزامنة
+document.getElementById('startSync').addEventListener('click', () => {
+    alert("المزامنة الآن تعمل: أي كتابة أو نقر في التبويبة الأولى ستظهر في باقي التبويبات.");
+});
 
-    // استماع للأحداث من لوحة المفاتيح
-    document.addEventListener("keypress", (e) => {
-      if (syncEnabled) {
-        socket.emit("keyEvent", { key: e.key });
-      }
-    });
+// مثال لالتقاط الكتابة في تبويبة الواجهة
+document.addEventListener('keydown', (e) => {
+    socket.emit('keyEvent', { key: e.key });
+});
 
-    // استماع للنقرات
-    document.addEventListener("click", () => {
-      if (syncEnabled) {
-        socket.emit("clickEvent");
-      }
-    });
-  </script>
+// مثال للنقر على أي مكان (يمكن تعديل لإحداثيات زر محدد)
+document.addEventListener('click', () => {
+    socket.emit('clickEvent');
+});
+</script>
 </body>
 </html>
