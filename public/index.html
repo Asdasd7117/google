@@ -1,83 +1,43 @@
 <!DOCTYPE html>
 <html lang="ar">
 <head>
-<meta charset="UTF-8">
-<title>Chrome Sync Controller</title>
-<style>
-    body, html { margin: 0; padding: 0; height: 100%; overflow: hidden; }
-    #controller {
-        position: fixed;
-        top: 10px;
-        right: 10px;
-        background: rgba(255,255,255,0.95);
-        padding: 10px;
-        border: 1px solid #000;
-        z-index: 9999;
-    }
-    #siteFrame { width:100%; height:100%; border:none; }
-</style>
+  <meta charset="UTF-8">
+  <title>مزامنة التبويبات</title>
+  <script src="/socket.io/socket.io.js"></script>
 </head>
 <body>
+  <h2>⚡ مزامنة التبويبات ⚡</h2>
+  <input type="text" id="url" placeholder="ادخل رابط الموقع">
+  <button id="start">تشغيل التبويبات</button>
+  <button id="sync">تشغيل المزامنة</button>
 
-<div id="controller">
-    <button id="syncBtn">تشغيل المزامنة</button>
-    <input id="urlInput" type="text" placeholder="ضع رابط الموقع هنا" style="width:200px;">
-    <button id="openBtn">فتح التبويبات</button>
-</div>
+  <script>
+    const socket = io();
+    let syncEnabled = false;
 
-<iframe id="siteFrame" src=""></iframe>
+    document.getElementById("start").onclick = () => {
+      const url = document.getElementById("url").value;
+      socket.emit("startSync", url);
+    };
 
-<script>
-let tabs = [];
-let syncActive = false;
+    document.getElementById("sync").onclick = () => {
+      syncEnabled = !syncEnabled;
+      alert(syncEnabled ? "✅ المزامنة شغالة" : "⛔ المزامنة متوقفة");
+    };
 
-// فتح التبويبات
-document.getElementById("openBtn").addEventListener("click", () => {
-    const url = document.getElementById("urlInput").value.trim();
-    if(!url) return alert("ادخل رابط الموقع!");
-    document.getElementById("siteFrame").src = url; // التبويبة الأولى
-    tabs = [];
-    for(let i=0;i<5;i++){
-        const win = window.open(url, "_blank");
-        if(win) tabs.push(win);
-    }
-});
+    // استماع للأحداث من لوحة المفاتيح
+    document.addEventListener("keypress", (e) => {
+      if (syncEnabled) {
+        socket.emit("keyEvent", { key: e.key });
+      }
+    });
 
-// زر المزامنة
-document.getElementById("syncBtn").addEventListener("click", () => {
-    syncActive = !syncActive;
-    document.getElementById("syncBtn").textContent = syncActive ? "ايقاف المزامنة" : "تشغيل المزامنة";
-});
-
-// الاستماع للأحداث داخل iframe
-document.getElementById("siteFrame").contentWindow.addEventListener("click", (e) => {
-    if(syncActive){
-        tabs.forEach(tab => {
-            try { tab.postMessage({type:'click', x:e.clientX, y:e.clientY}, '*'); } catch {}
-        });
-    }
-});
-
-document.getElementById("siteFrame").contentWindow.addEventListener("input", (e) => {
-    if(syncActive){
-        const val = e.target.value;
-        tabs.forEach(tab => {
-            try { tab.postMessage({type:'input', value:val}, '*'); } catch {}
-        });
-    }
-});
-
-// استقبال الرسائل في التبويبات الخلفية
-window.addEventListener("message", (e) => {
-    if(!e.data) return;
-    if(e.data.type === 'click'){
-        document.elementFromPoint(e.data.x, e.data.y).click();
-    } else if(e.data.type === 'input'){
-        const input = document.querySelector("input");
-        if(input) input.value = e.data.value;
-    }
-});
-</script>
-
+    // استماع للنقرات
+    document.addEventListener("click", () => {
+      if (syncEnabled) {
+        socket.emit("clickEvent");
+      }
+    });
+  </script>
 </body>
 </html>
