@@ -1,10 +1,10 @@
 {
   "name": "chrome-sync",
   "version": "1.0.0",
-  "description": "Synchronized Chrome tabs using Puppeteer Core",
   "main": "app.js",
   "scripts": {
-    "start": "node app.js"
+    "start": "node app.js",
+    "postinstall": "echo Chrome ready"
   },
   "dependencies": {
     "puppeteer-core": "^24.10.2",
