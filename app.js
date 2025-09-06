@@ -19,21 +19,27 @@ async function startBrowser(url) {
     args: ["--no-sandbox", "--disable-setuid-sandbox"]
   });
 
-  // افتح 6 تبويبات
-  for (let i = 0; i < 6; i++) {
+  // افتح أول تبويبة واذهب للرابط
+  const firstPage = await browser.newPage();
+  await firstPage.goto(url, { waitUntil: "networkidle2" });
+  pages.push(firstPage);
+
+  // افتح 5 تبويبات إضافية خلفية بنفس الرابط
+  for (let i = 0; i < 5; i++) {
     const page = await browser.newPage();
     await page.goto(url, { waitUntil: "networkidle2" });
     pages.push(page);
   }
 }
 
-// استقبال الأحداث من التبويبة الأولى وإرسالها للباقي
+// المزامنة
 io.on("connection", (socket) => {
   console.log("عميل متصل");
 
   socket.on("startSync", async (url) => {
     if (!browser) {
       await startBrowser(url);
+      console.log("تم فتح 6 تبويبات");
     }
   });
 
@@ -50,7 +56,8 @@ io.on("connection", (socket) => {
   socket.on("clickEvent", async () => {
     for (let i = 1; i < pages.length; i++) {
       try {
-        await pages[i].mouse.click(200, 200); // كليك في مكان افتراضي
+        // يمكنك تعديل الإحداثيات حسب مكان الزر في الموقع
+        await pages[i].mouse.click(200, 200);
       } catch (err) {
         console.error("خطأ كليك:", err);
       }
