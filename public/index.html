@@ -1,38 +1,42 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<title>Chrome Sync</title>
-<script src="/socket.io/socket.io.js"></script>
+  <meta charset="UTF-8">
+  <title>Chrome Sync</title>
 </head>
 <body>
-<h2>Chrome Sync</h2>
-<input type="text" id="urlInput" placeholder="ضع رابط هنا" size="50">
-<button id="openTabs">فتح التبويبات</button>
-<button id="startSync">تشغيل المزامنة</button>
+  <h1>Chrome Sync Controller</h1>
+  <input type="text" id="url" placeholder="Enter URL">
+  <button id="open-tabs">Open 6 Tabs</button>
+  <br><br>
+  <input type="text" id="sync-text" placeholder="Type to sync">
+  <button id="sync-btn">Sync Click</button>
 
-<script>
-const socket = io();
+  <script src="/socket.io/socket.io.js"></script>
+  <script>
+    const socket = io();
+    const openBtn = document.getElementById("open-tabs");
+    const urlInput = document.getElementById("url");
+    const syncText = document.getElementById("sync-text");
+    const syncBtn = document.getElementById("sync-btn");
 
-document.getElementById('openTabs').onclick = () => {
-  const url = document.getElementById('urlInput').value;
-  if (!url) return alert('ضع رابط أولاً');
-  socket.emit('openTabs', url);
-};
+    openBtn.onclick = async () => {
+      const url = urlInput.value;
+      if (!url) return alert("Enter URL");
+      await fetch("/start-tabs", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ url })
+      });
+    };
 
-document.getElementById('startSync').onclick = () => {
-  alert('ابدأ بالكتابة أو النقر في التبويبة الأولى. باقي التبويبات ستزامن تلقائياً.');
-};
+    syncText.oninput = () => {
+      socket.emit("sync-input", syncText.value);
+    };
 
-// مثال: مزامنة كتابة أو نقرة من التبويبة الأولى
-document.addEventListener('click', (e) => {
-  if (e.target.tagName === 'BUTTON') return;
-  socket.emit('syncEvent', { type: 'click', selector: e.target.tagName.toLowerCase() });
-});
-
-document.addEventListener('input', (e) => {
-  socket.emit('syncEvent', { type: 'input', selector: e.target.tagName.toLowerCase(), value: e.target.value });
-});
-</script>
+    syncBtn.onclick = () => {
+      socket.emit("sync-click");
+    };
+  </script>
 </body>
 </html>
