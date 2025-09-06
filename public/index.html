@@ -1,42 +1,37 @@
 <!DOCTYPE html>
-<html lang="ar">
+<html lang="en">
 <head>
 <meta charset="UTF-8">
 <title>Chrome Sync</title>
 <script src="/socket.io/socket.io.js"></script>
 </head>
 <body>
-<h2>تشغيل المزامنة</h2>
-<input type="text" id="urlInput" placeholder="ادخل الرابط هنا" style="width: 300px;">
-<button id="startTabs">تشغيل التبويبات</button>
+<h2>Chrome Sync</h2>
+<input type="text" id="urlInput" placeholder="ضع رابط هنا" size="50">
+<button id="openTabs">فتح التبويبات</button>
 <button id="startSync">تشغيل المزامنة</button>
 
 <script>
 const socket = io();
 
-// عند الضغط على زر تشغيل التبويبات
-document.getElementById('startTabs').addEventListener('click', () => {
-    const url = document.getElementById('urlInput').value;
-    if(url) {
-        socket.emit('startSync', url); // يرسل للرابط للسيرفر
-    } else {
-        alert("ادخل رابط أولاً");
-    }
+document.getElementById('openTabs').onclick = () => {
+  const url = document.getElementById('urlInput').value;
+  if (!url) return alert('ضع رابط أولاً');
+  socket.emit('openTabs', url);
+};
+
+document.getElementById('startSync').onclick = () => {
+  alert('ابدأ بالكتابة أو النقر في التبويبة الأولى. باقي التبويبات ستزامن تلقائياً.');
+};
+
+// مثال: مزامنة كتابة أو نقرة من التبويبة الأولى
+document.addEventListener('click', (e) => {
+  if (e.target.tagName === 'BUTTON') return;
+  socket.emit('syncEvent', { type: 'click', selector: e.target.tagName.toLowerCase() });
 });
 
-// عند الضغط على زر المزامنة
-document.getElementById('startSync').addEventListener('click', () => {
-    alert("المزامنة الآن تعمل: أي كتابة أو نقر في التبويبة الأولى ستظهر في باقي التبويبات.");
-});
-
-// مثال لالتقاط الكتابة في تبويبة الواجهة
-document.addEventListener('keydown', (e) => {
-    socket.emit('keyEvent', { key: e.key });
-});
-
-// مثال للنقر على أي مكان (يمكن تعديل لإحداثيات زر محدد)
-document.addEventListener('click', () => {
-    socket.emit('clickEvent');
+document.addEventListener('input', (e) => {
+  socket.emit('syncEvent', { type: 'input', selector: e.target.tagName.toLowerCase(), value: e.target.value });
 });
 </script>
 </body>
