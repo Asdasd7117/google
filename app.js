@@ -1,67 +1,69 @@
-const express = require('express');
-const puppeteer = require('puppeteer');
+const express = require("express");
+const { Server } = require("socket.io");
+const http = require("http");
+const puppeteer = require("puppeteer"); // ← استبدلنا puppeteer-core بالنسخة الكاملة
 
 const app = express();
-const PORT = process.env.PORT || 3000;
+const server = http.createServer(app);
+const io = new Server(server);
 
-let browser;
 let pages = [];
-let syncActive = false;
 
-// واجهة HTML بسيطة للزر
-app.get('/', (req, res) => {
-  res.send(`
-    <h2>Chrome Sync Controller</h2>
-    <button onclick="fetch('/toggle').then(()=>location.reload())">
-      ${syncActive ? 'إيقاف المزامنة' : 'تشغيل المزامنة'}
-    </button>
-  `);
-});
+app.use(express.static("public"));
 
-// تشغيل / إيقاف المزامنة
-app.get('/toggle', async (req, res) => {
-  syncActive = !syncActive;
-  res.sendStatus(200);
-});
+io.on("connection", (socket) => {
+  console.log("🔌 Client connected");
 
-// فتح المتصفح مع 6 تبويبات
-async function startBrowser(url) {
-  browser = await puppeteer.launch({ headless: false });
-  
-  const firstPage = await browser.newPage();
-  await firstPage.goto(url);
-  pages.push(firstPage);
+  socket.on("sync-action", async (data) => {
+    console.log("🔄 Syncing action:", data);
+    if (!pages.length) return;
 
-  for (let i = 1; i < 6; i++) {
-    const page = await browser.newPage();
-    await page.goto(url);
-    pages.push(page);
-  }
-
-  // رصد الكتابة والنقر في التبويب الأول
-  await firstPage.exposeFunction('syncInput', async (text) => {
-    if (syncActive) {
-      for (let i = 1; i < pages.length; i++) {
-        await pages[i].evaluate((txt) => {
-          const input = document.querySelector('input');
-          if (input) input.value = txt;
-        }, text);
+    for (let i = 1; i < pages.length; i++) {
+      try {
+        if (data.type === "click") {
+          await pages[i].click(data.selector);
+        } else if (data.type === "input") {
+          await pages[i].focus(data.selector);
+          await pages[i].keyboard.type(data.value);
+        }
+      } catch (err) {
+        console.error("⚠️ Error syncing tab:", err.message);
       }
     }
   });
+});
 
-  await firstPage.evaluate(() => {
-    const input = document.querySelector('input');
-    if (input) {
-      input.addEventListener('input', e => {
-        window.syncInput(e.target.value);
-      });
-    }
+async function startBrowser(url) {
+  console.log("🚀 Launching browser...");
+  const browser = await puppeteer.launch({
+    headless: true, // خليه true عشان Render ما يعرض واجهة
+    args: ["--no-sandbox", "--disable-setuid-sandbox"]
   });
+
+  pages = [];
+  const page = await browser.newPage();
+  await page.goto(url);
+  pages.push(page);
+
+  // فتح تبويبات إضافية
+  for (let i = 0; i < 5; i++) {
+    const p = await browser.newPage();
+    await p.goto(url);
+    pages.push(p);
+  }
+
+  console.log("✅ Opened 6 tabs on:", url);
 }
 
-app.listen(PORT, async () => {
-  console.log(`Server running on port ${PORT}`);
-  const url = 'https://example.com'; // ضع رابط الموقع هنا
+app.get("/start", async (req, res) => {
+  const { url } = req.query;
+  if (!url) return res.send("❌ Provide ?url=example.com");
+
   await startBrowser(url);
+  res.send(`✅ Opened 6 tabs for <b>${url}</b>`);
+});
+
+const PORT = process.env.PORT || 10000;
+server.listen(PORT, () => {
+  console.log(`🌍 Server running on port ${PORT}`);
 });
