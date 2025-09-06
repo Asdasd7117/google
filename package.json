@@ -1,11 +1,17 @@
 {
   "name": "chrome-sync",
   "version": "1.0.0",
+  "description": "Multi-tab Chrome sync with Puppeteer",
   "main": "app.js",
-  "license": "MIT",
+  "scripts": {
+    "start": "node app.js"
+  },
   "dependencies": {
     "express": "^4.19.2",
-    "socket.io": "^4.7.5",
-    "puppeteer": "^24.10.2"
+    "puppeteer": "^24.10.2",
+    "socket.io": "^4.8.1"
+  },
+  "engines": {
+    "node": ">=18 <23"
   }
 }
