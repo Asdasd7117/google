@@ -1,42 +1,36 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <title>Chrome Sync</title>
+<meta charset="UTF-8">
+<title>Chrome Sync Controller</title>
 </head>
 <body>
-  <h1>Chrome Sync Controller</h1>
-  <input type="text" id="url" placeholder="Enter URL">
-  <button id="open-tabs">Open 6 Tabs</button>
-  <br><br>
-  <input type="text" id="sync-text" placeholder="Type to sync">
-  <button id="sync-btn">Sync Click</button>
+<h2>Chrome Tabs Synchronization</h2>
+<input type="text" id="syncInput" placeholder="اكتب هنا…">
+<button id="syncBtn">Sync Text</button>
+<button id="clickBtn">Sync Click</button>
 
-  <script src="/socket.io/socket.io.js"></script>
-  <script>
-    const socket = io();
-    const openBtn = document.getElementById("open-tabs");
-    const urlInput = document.getElementById("url");
-    const syncText = document.getElementById("sync-text");
-    const syncBtn = document.getElementById("sync-btn");
+<script>
+const input = document.getElementById("syncInput");
+const btn = document.getElementById("syncBtn");
+const clickBtn = document.getElementById("clickBtn");
 
-    openBtn.onclick = async () => {
-      const url = urlInput.value;
-      if (!url) return alert("Enter URL");
-      await fetch("/start-tabs", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ url })
-      });
-    };
+btn.onclick = () => {
+  fetch("/sync-text", {
+    method: "POST",
+    headers: {"Content-Type": "application/json"},
+    body: JSON.stringify({ text: input.value })
+  });
+};
 
-    syncText.oninput = () => {
-      socket.emit("sync-input", syncText.value);
-    };
-
-    syncBtn.onclick = () => {
-      socket.emit("sync-click");
-    };
-  </script>
+clickBtn.onclick = () => {
+  const selector = prompt("ادخل محدد الزر (CSS selector) للمزامنة:");
+  fetch("/sync-click", {
+    method: "POST",
+    headers: {"Content-Type": "application/json"},
+    body: JSON.stringify({ selector })
+  });
+};
+</script>
 </body>
 </html>
