@@ -1,69 +1,62 @@
 const express = require("express");
-const { Server } = require("socket.io");
 const http = require("http");
-const puppeteer = require("puppeteer"); // ← استبدلنا puppeteer-core بالنسخة الكاملة
+const { Server } = require("socket.io");
+const puppeteer = require("puppeteer");
+const path = require("path");
 
 const app = express();
 const server = http.createServer(app);
 const io = new Server(server);
 
+app.use(express.static(path.join(__dirname, "public")));
+
+let browser;
 let pages = [];
 
-app.use(express.static("public"));
+async function startBrowser(url) {
+  browser = await puppeteer.launch({
+    headless: false,
+    args: ["--no-sandbox", "--disable-setuid-sandbox"]
+  });
 
+  // افتح 6 تبويبات
+  for (let i = 0; i < 6; i++) {
+    const page = await browser.newPage();
+    await page.goto(url, { waitUntil: "networkidle2" });
+    pages.push(page);
+  }
+}
+
+// استقبال الأحداث من التبويبة الأولى وإرسالها للباقي
 io.on("connection", (socket) => {
-  console.log("🔌 Client connected");
+  console.log("عميل متصل");
 
-  socket.on("sync-action", async (data) => {
-    console.log("🔄 Syncing action:", data);
-    if (!pages.length) return;
+  socket.on("startSync", async (url) => {
+    if (!browser) {
+      await startBrowser(url);
+    }
+  });
 
+  socket.on("keyEvent", async (data) => {
     for (let i = 1; i < pages.length; i++) {
       try {
-        if (data.type === "click") {
-          await pages[i].click(data.selector);
-        } else if (data.type === "input") {
-          await pages[i].focus(data.selector);
-          await pages[i].keyboard.type(data.value);
-        }
+        await pages[i].keyboard.type(data.key);
       } catch (err) {
-        console.error("⚠️ Error syncing tab:", err.message);
+        console.error("خطأ بالمزامنة:", err);
+      }
+    }
+  });
+
+  socket.on("clickEvent", async () => {
+    for (let i = 1; i < pages.length; i++) {
+      try {
+        await pages[i].mouse.click(200, 200); // كليك في مكان افتراضي
+      } catch (err) {
+        console.error("خطأ كليك:", err);
       }
     }
   });
 });
 
-async function startBrowser(url) {
-  console.log("🚀 Launching browser...");
-  const browser = await puppeteer.launch({
-    headless: true, // خليه true عشان Render ما يعرض واجهة
-    args: ["--no-sandbox", "--disable-setuid-sandbox"]
-  });
-
-  pages = [];
-  const page = await browser.newPage();
-  await page.goto(url);
-  pages.push(page);
-
-  // فتح تبويبات إضافية
-  for (let i = 0; i < 5; i++) {
-    const p = await browser.newPage();
-    await p.goto(url);
-    pages.push(p);
-  }
-
-  console.log("✅ Opened 6 tabs on:", url);
-}
-
-app.get("/start", async (req, res) => {
-  const { url } = req.query;
-  if (!url) return res.send("❌ Provide ?url=example.com");
-
-  await startBrowser(url);
-  res.send(`✅ Opened 6 tabs for <b>${url}</b>`);
-});
-
 const PORT = process.env.PORT || 10000;
-server.listen(PORT, () => {
-  console.log(`🌍 Server running on port ${PORT}`);
-});
+server.listen(PORT, () => console.log("Server running on port", PORT));
