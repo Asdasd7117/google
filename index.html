@@ -1,142 +1,122 @@
-<?php
-session_start();
-
-$projectRoot = __DIR__ . '/android_project';
-@mkdir($projectRoot, 0777, true);
-
-// ==== دالة لإنشاء المجلدات والملفات من النص ====
-function parseAndCreate($base, $lines) {
-    $stack = [ ['path'=>$base, 'level'=>-1] ];
-
-    foreach ($lines as $line) {
-        if (trim($line) === '') continue;
-
-        // حساب عدد الفراغات في البداية لتحديد المستوى
-        preg_match('/^\s*/', $line, $matches);
-        $level = strlen($matches[0]);
-
-        $name = trim($line);
-        $path = '';
-
-        // إيجاد المجلد الأب المناسب
-        while ($stack && $stack[count($stack)-1]['level'] >= $level) {
-            array_pop($stack);
-        }
-        $parent = $stack[count($stack)-1]['path'];
-        $path = $parent . '/' . $name;
-
-        // إذا الاسم ينتهي بـ "/" أو لا يوجد "." => مجلد
-        if (substr($name,-1) === '/' || strpos($name,'.') === false) {
-            @mkdir($path, 0777, true);
-            $stack[] = ['path'=>$path, 'level'=>$level];
-        } else {
-            @mkdir(dirname($path),0777,true);
-            if (!file_exists($path)) file_put_contents($path,'');
-        }
-    }
-}
-
-// ==== حفظ الملف عند تحريره ====
-if (isset($_POST['file_path'], $_POST['file_content'])) {
-    $filePath = $projectRoot . '/' . $_POST['file_path'];
-    if (file_exists($filePath)) file_put_contents($filePath, $_POST['file_content']);
-    echo "<p style='color:green;'>تم حفظ الملف بنجاح!</p>";
-}
-
-// ==== إنشاء المشروع من النص ====
-if (isset($_POST['structure_text'])) {
-    $lines = explode("\n", $_POST['structure_text']);
-    parseAndCreate($projectRoot, $lines);
-    echo "<p style='color:blue;'>تم إنشاء هيكل المشروع!</p>";
-}
-
-// ==== ضغط المشروع ====
-if (isset($_POST['zip_project'])) {
-    $zip = new ZipArchive();
-    $zipFile = $projectRoot . "/project_package.zip";
-    if ($zip->open($zipFile, ZipArchive::CREATE | ZipArchive::OVERWRITE)) {
-        $files = new RecursiveIteratorIterator(
-            new RecursiveDirectoryIterator($projectRoot),
-            RecursiveIteratorIterator::LEAVES_ONLY
-        );
-        foreach ($files as $file) {
-            if (!$file->isDir() && $file->getRealPath() != $zipFile) {
-                $relativePath = substr($file->getRealPath(), strlen($projectRoot)+1);
-                $zip->addFile($file->getRealPath(), $relativePath);
-            }
-        }
-        $zip->close();
-        echo "<p style='color:blue;'>تم إنشاء الملف المضغوط: <a href='android_project/project_package.zip'>تحميل ZIP</a></p>";
-    }
-}
-
-// ==== دالة عرض الملفات للمحرر ====
-function listFiles($dir, $base='') {
-    $items = scandir($dir);
-    echo "<ul>";
-    foreach ($items as $item) {
-        if ($item=='.'||$item=='..') continue;
-        $full = $dir.'/'.$item;
-        $rel = $base.$item;
-        if (is_dir($full)) {
-            echo "<li><strong>$item/</strong>";
-            listFiles($full,$rel.'/');
-            echo "</li>";
-        } else {
-            echo "<li>
-            <form method='POST' style='display:inline-block; margin-bottom:5px;'>
-                <input type='hidden' name='file_path' value='$rel'>
-                <button type='submit' style='margin-right:5px;'>فتح $item</button>
-            </form>
-            </li>";
-        }
-    }
-    echo "</ul>";
-}
-
-$editContent = '';
-$editFile = '';
-if (isset($_POST['file_path']) && !isset($_POST['file_content'])) {
-    $editFile = $_POST['file_path'];
-    $full = $projectRoot.'/'.$editFile;
-    if (file_exists($full)) $editContent = htmlspecialchars(file_get_contents($full));
-}
-?>
-
 <!DOCTYPE html>
 <html lang="ar">
 <head>
 <meta charset="UTF-8">
-<title>Flutter Project Editor</title>
+<title>Flutter Project Editor - Netlify</title>
 <style>
 body { font-family: Arial; margin:20px; }
-textarea { width:100%; height:300px; }
+textarea { width:100%; height:200px; }
 ul { list-style:none; padding-left:20px; }
-button { padding:5px 10px; margin-top:5px; }
+button { padding:5px 10px; margin-top:5px; margin-bottom:5px; }
+.file-editor { width:100%; height:300px; margin-top:10px; }
 </style>
 </head>
 <body>
+
 <h2>إدخال هيكل المشروع نصياً</h2>
-<form method="POST">
-<textarea name="structure_text" placeholder="الصق هنا الهيكل النصي للمشروع..."></textarea><br>
-<button type="submit">إنشاء المشروع</button>
-</form>
+<textarea id="structureText" placeholder="الصق هنا الهيكل النصي للمشروع..."></textarea><br>
+<button onclick="createProject()">إنشاء المشروع</button>
 
 <h2>هيكل المشروع</h2>
-<?php listFiles($projectRoot); ?>
+<div id="fileTree"></div>
 
-<?php if($editFile): ?>
-<h3>تعديل الملف: <?php echo $editFile; ?></h3>
-<form method="POST">
-<input type="hidden" name="file_path" value="<?php echo $editFile; ?>">
-<textarea name="file_content"><?php echo $editContent; ?></textarea><br>
-<button type="submit">حفظ التعديلات</button>
-</form>
-<?php endif; ?>
+<h2>تحرير الملف</h2>
+<div id="editorDiv" style="display:none;">
+  <p>الملف: <span id="currentFile"></span></p>
+  <textarea id="fileEditor" class="file-editor"></textarea><br>
+  <button onclick="saveFile()">حفظ التعديلات</button>
+</div>
 
 <h2>ضغط المشروع</h2>
-<form method="POST">
-<button type="submit" name="zip_project">إنشاء ZIP وتحميل</button>
-</form>
+<button onclick="downloadZip()">إنشاء ZIP وتحميل</button>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.11.0/jszip.min.js"></script>
+<script>
+let project = {}; // هيكل المشروع
+let currentFile = '';
+
+function createProject() {
+    const text = document.getElementById('structureText').value;
+    const lines = text.split('\n');
+    project = {};
+    const stack = [{obj: project, level:-1}];
+
+    lines.forEach(line=>{
+        if(!line.trim()) return;
+        const spaces = line.match(/^\s*/)[0].length;
+        const name = line.trim();
+        while(stack.length && stack[stack.length-1].level >= spaces) stack.pop();
+        const parent = stack[stack.length-1].obj;
+        if(name.endsWith('/') || !name.includes('.')) parent[name.replace(/\/$/,'')] = {};
+        else parent[name] = '';
+        if(name.endsWith('/') || !name.includes('.')) stack.push({obj: parent[name.replace(/\/$/,'')], level:spaces});
+    });
+    renderTree();
+}
+
+function renderTree() {
+    const container = document.getElementById('fileTree');
+    container.innerHTML = '';
+    function buildTree(obj, path='') {
+        const ul = document.createElement('ul');
+        for(const key in obj) {
+            const li = document.createElement('li');
+            if(typeof obj[key]==='object') {
+                li.innerHTML = `<strong>${key}/</strong>`;
+                li.appendChild(buildTree(obj[key], path + key + '/'));
+            } else {
+                const btn = document.createElement('button');
+                btn.textContent = key;
+                btn.onclick = ()=>openFile(path + key);
+                li.appendChild(btn);
+            }
+            ul.appendChild(li);
+        }
+        return ul;
+    }
+    container.appendChild(buildTree(project));
+}
+
+function openFile(path) {
+    currentFile = path;
+    document.getElementById('editorDiv').style.display='block';
+    document.getElementById('currentFile').textContent = path;
+    const parts = path.split('/');
+    let obj = project;
+    for(let i=0;i<parts.length;i++){
+        obj = obj[parts[i]];
+    }
+    document.getElementById('fileEditor').value = obj;
+}
+
+function saveFile() {
+    const parts = currentFile.split('/');
+    let obj = project;
+    for(let i=0;i<parts.length-1;i++) obj = obj[parts[i]];
+    obj[parts[parts.length-1]] = document.getElementById('fileEditor').value;
+    alert('تم حفظ التعديلات!');
+}
+
+function downloadZip() {
+    const zip = new JSZip();
+    function addFiles(obj, folder) {
+        for(const key in obj) {
+            if(typeof obj[key]==='object') {
+                const sub = folder.folder(key);
+                addFiles(obj[key], sub);
+            } else {
+                folder.file(key, obj[key]);
+            }
+        }
+    }
+    addFiles(project, zip);
+    zip.generateAsync({type:"blob"}).then(function(content){
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(content);
+        a.download = "project.zip";
+        a.click();
+    });
+}
+</script>
 </body>
-  </html>
+</html>
