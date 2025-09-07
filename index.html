@@ -14,7 +14,7 @@ body { font-family: Arial; margin:20px; }
 ul { list-style:none; padding-left:20px; }
 button { padding:5px 10px; margin-top:5px; margin-bottom:5px; }
 #editorDiv { display:none; margin-top:10px; }
-.CodeMirror { border:1px solid #ccc; height:300px; }
+.CodeMirror { border:1px solid #ccc; height:300px; direction:ltr; }
 .empty-file { color:red; }
 </style>
 </head>
@@ -51,7 +51,8 @@ let currentFile = '';
 let editor = CodeMirror.fromTextArea(document.getElementById("fileEditor"), {
     lineNumbers: true,
     mode: "dart",
-    theme: "eclipse"
+    theme: "eclipse",
+    direction: "ltr" // أرقام الأسطر على اليسار
 });
 
 // ==== إنشاء المشروع من النص ====
@@ -120,7 +121,6 @@ function openFile(path) {
     for(let i=0;i<parts.length;i++) obj = obj[parts[i]];
 
     editor.setValue(obj);
-    // تغيير لغة CodeMirror حسب امتداد الملف
     if(path.endsWith('.kt')) editor.setOption('mode','text/x-kotlin');
     else if(path.endsWith('.dart')) editor.setOption('mode','dart');
     else editor.setOption('mode','javascript');
@@ -133,34 +133,25 @@ function saveFile() {
     for(let i=0;i<parts.length-1;i++) obj = obj[parts[i]];
     obj[parts[parts.length-1]] = editor.getValue();
     alert('تم حفظ التعديلات!');
-    renderTree(); // إعادة تلوين الملفات الفارغة
+    renderTree();
 }
 
-// ==== إنشاء ZIP مع التحقق من الملفات والمجلدات الفارغة ====
+// ==== إنشاء ZIP مع المجلدات والملفات الفارغة ====
 function downloadZip() {
     const zip = new JSZip();
-    let emptyItems = [];
 
-    function addFiles(obj, folder, path='') {
+    function addFiles(obj, folder) {
         for(const key in obj) {
-            const fullPath = path + key;
             if(typeof obj[key]==='object') {
-                if(Object.keys(obj[key]).length === 0) emptyItems.push(fullPath + '/'); // مجلد فارغ
                 const sub = folder.folder(key);
-                addFiles(obj[key], sub, fullPath + '/');
+                addFiles(obj[key], sub);
             } else {
-                if(obj[key].trim() === '') emptyItems.push(fullPath); // ملف فارغ
                 folder.file(key, obj[key]);
             }
         }
     }
 
     addFiles(project, zip);
-
-    if(emptyItems.length > 0) {
-        const confirmMsg = "تم العثور على مجلدات أو ملفات فارغة:\n" + emptyItems.join("\n") + "\nهل تريد الاستمرار وإنشاء ZIP؟";
-        if(!confirm(confirmMsg)) return;
-    }
 
     zip.generateAsync({type:"blob"}).then(function(content){
         const a = document.createElement('a');
@@ -170,21 +161,16 @@ function downloadZip() {
     });
 }
 
-// ==== إضافة ملفات Android الافتراضية مع gradlew و gradlew.bat ====
+// ==== إضافة ملفات Android الافتراضية + gradlew ====
 function addDefaultAndroidFiles() {
     if(!project['android']) project['android'] = {};
 
-    // محاولة استخراج اسم المشروع من أول مستوى في الهيكل
     let projectName = "MyFlutterApp";
     const rootKeys = Object.keys(project);
-    if(rootKeys.length > 0) {
-        projectName = rootKeys[0]; // اسم أول مجلد كاسم المشروع
-    }
+    if(rootKeys.length > 0) projectName = rootKeys[0];
 
-    // تحويل الاسم إلى شكل مناسب للبكج
     const packageName = "com.example." + projectName.toLowerCase();
 
-    // build.gradle الرئيسي
     project['android']['build.gradle'] = 
 `buildscript {
     repositories { google(); mavenCentral() }
@@ -192,10 +178,8 @@ function addDefaultAndroidFiles() {
 }
 allprojects { repositories { google(); mavenCentral() } }`;
 
-    // settings.gradle
     project['android']['settings.gradle'] = `rootProject.name = '${projectName}'`;
 
-    // gradle/wrapper/gradle-wrapper.properties + مكان فارغ للـ jar
     project['android']['gradle'] = { 'wrapper': {
         'gradle-wrapper.properties':
 `distributionBase=GRADLE_USER_HOME
@@ -203,22 +187,19 @@ distributionPath=wrapper/dists
 distributionUrl=https\\://services.gradle.org/distributions/gradle-7.5-bin.zip
 zipStoreBase=GRADLE_USER_HOME
 zipStorePath=wrapper/dists`,
-        'gradle-wrapper.jar': '' // ⚠️ يحتاج تنزيل يدوي
+        'gradle-wrapper.jar': '' // يحتاج تنزيل يدوي
     } };
 
-    // gradlew (لينكس/ماك)
     project['android']['gradlew'] =
 `#!/usr/bin/env sh
 DIR="$( cd "$( dirname "$0" )" && pwd )"
 exec "$DIR/gradle/wrapper/gradle-wrapper.jar" "$@"`;
 
-    // gradlew.bat (ويندوز)
     project['android']['gradlew.bat'] =
 `@ECHO OFF
 SET DIR=%~dp0
 "%DIR%\\gradle\\wrapper\\gradle-wrapper.jar" %*`;
 
-    // app/
     project['android']['app'] = {
         'build.gradle':
 `apply plugin: 'com.android.application'
