@@ -3,38 +3,58 @@
 <head>
 <meta charset="UTF-8">
 <title>Flutter Project Editor - Netlify</title>
+
+<!-- CSS CodeMirror -->
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.14/codemirror.min.css">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.14/theme/eclipse.min.css">
+
 <style>
 body { font-family: Arial; margin:20px; }
-textarea { width:100%; height:200px; }
+#structureText { width:100%; height:150px; }
 ul { list-style:none; padding-left:20px; }
 button { padding:5px 10px; margin-top:5px; margin-bottom:5px; }
-.file-editor { width:100%; height:300px; margin-top:10px; }
+#editorDiv { display:none; margin-top:10px; }
+.CodeMirror { border:1px solid #ccc; height:300px; }
+.empty-file { color:red; }
 </style>
 </head>
 <body>
 
 <h2>إدخال هيكل المشروع نصياً</h2>
 <textarea id="structureText" placeholder="الصق هنا الهيكل النصي للمشروع..."></textarea><br>
+<label><input type="checkbox" id="addAndroidFiles"> إضافة ملفات Android الافتراضية</label><br>
 <button onclick="createProject()">إنشاء المشروع</button>
 
 <h2>هيكل المشروع</h2>
 <div id="fileTree"></div>
 
 <h2>تحرير الملف</h2>
-<div id="editorDiv" style="display:none;">
+<div id="editorDiv">
   <p>الملف: <span id="currentFile"></span></p>
-  <textarea id="fileEditor" class="file-editor"></textarea><br>
+  <textarea id="fileEditor"></textarea><br>
   <button onclick="saveFile()">حفظ التعديلات</button>
 </div>
 
 <h2>ضغط المشروع</h2>
 <button onclick="downloadZip()">إنشاء ZIP وتحميل</button>
 
+<!-- JS Libraries -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.11.0/jszip.min.js"></script>
-<script>
-let project = {}; // هيكل المشروع
-let currentFile = '';
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.14/codemirror.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.14/mode/javascript/javascript.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.14/mode/clike/clike.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.14/mode/dart/dart.min.js"></script>
 
+<script>
+let project = {};
+let currentFile = '';
+let editor = CodeMirror.fromTextArea(document.getElementById("fileEditor"), {
+    lineNumbers: true,
+    mode: "dart",
+    theme: "eclipse"
+});
+
+// ==== إنشاء المشروع من النص ====
 function createProject() {
     const text = document.getElementById('structureText').value;
     const lines = text.split('\n');
@@ -51,9 +71,16 @@ function createProject() {
         else parent[name] = '';
         if(name.endsWith('/') || !name.includes('.')) stack.push({obj: parent[name.replace(/\/$/,'')], level:spaces});
     });
+
+    // إضافة ملفات Android الافتراضية إذا اختار المستخدم
+    if(document.getElementById('addAndroidFiles').checked) {
+        addDefaultAndroidFiles();
+    }
+
     renderTree();
 }
 
+// ==== عرض الشجرة مع تمييز الملفات الفارغة ====
 function renderTree() {
     const container = document.getElementById('fileTree');
     container.innerHTML = '';
@@ -61,13 +88,17 @@ function renderTree() {
         const ul = document.createElement('ul');
         for(const key in obj) {
             const li = document.createElement('li');
+            const fullPath = path + key;
             if(typeof obj[key]==='object') {
+                const subUl = buildTree(obj[key], fullPath + '/');
+                if(subUl.children.length === 0) li.classList.add('empty-file'); // مجلد فارغ
                 li.innerHTML = `<strong>${key}/</strong>`;
-                li.appendChild(buildTree(obj[key], path + key + '/'));
+                li.appendChild(subUl);
             } else {
                 const btn = document.createElement('button');
                 btn.textContent = key;
-                btn.onclick = ()=>openFile(path + key);
+                if(obj[key].trim()==='') btn.style.color='red'; // ملف فارغ باللون الأحمر
+                btn.onclick = ()=>openFile(fullPath);
                 li.appendChild(btn);
             }
             ul.appendChild(li);
@@ -77,45 +108,122 @@ function renderTree() {
     container.appendChild(buildTree(project));
 }
 
+// ==== فتح الملف في المحرر ====
 function openFile(path) {
     currentFile = path;
     document.getElementById('editorDiv').style.display='block';
     document.getElementById('currentFile').textContent = path;
+
     const parts = path.split('/');
     let obj = project;
-    for(let i=0;i<parts.length;i++){
-        obj = obj[parts[i]];
-    }
-    document.getElementById('fileEditor').value = obj;
+    for(let i=0;i<parts.length;i++) obj = obj[parts[i]];
+
+    editor.setValue(obj);
+    // تغيير لغة CodeMirror حسب امتداد الملف
+    if(path.endsWith('.kt')) editor.setOption('mode','text/x-kotlin');
+    else if(path.endsWith('.dart')) editor.setOption('mode','dart');
+    else editor.setOption('mode','javascript');
 }
 
+// ==== حفظ الملف ====
 function saveFile() {
     const parts = currentFile.split('/');
     let obj = project;
     for(let i=0;i<parts.length-1;i++) obj = obj[parts[i]];
-    obj[parts[parts.length-1]] = document.getElementById('fileEditor').value;
+    obj[parts[parts.length-1]] = editor.getValue();
     alert('تم حفظ التعديلات!');
+    renderTree(); // إعادة تلوين الملفات الفارغة
 }
 
+// ==== إنشاء ZIP مع التحقق من الملفات والمجلدات الفارغة ====
 function downloadZip() {
     const zip = new JSZip();
-    function addFiles(obj, folder) {
+    let emptyItems = [];
+
+    function addFiles(obj, folder, path='') {
         for(const key in obj) {
+            const fullPath = path + key;
             if(typeof obj[key]==='object') {
+                if(Object.keys(obj[key]).length === 0) emptyItems.push(fullPath + '/'); // مجلد فارغ
                 const sub = folder.folder(key);
-                addFiles(obj[key], sub);
+                addFiles(obj[key], sub, fullPath + '/');
             } else {
+                if(obj[key].trim() === '') emptyItems.push(fullPath); // ملف فارغ
                 folder.file(key, obj[key]);
             }
         }
     }
+
     addFiles(project, zip);
+
+    if(emptyItems.length > 0) {
+        const confirmMsg = "تم العثور على مجلدات أو ملفات فارغة:\n" + emptyItems.join("\n") + "\nهل تريد الاستمرار وإنشاء ZIP؟";
+        if(!confirm(confirmMsg)) return;
+    }
+
     zip.generateAsync({type:"blob"}).then(function(content){
         const a = document.createElement('a');
         a.href = URL.createObjectURL(content);
         a.download = "project.zip";
         a.click();
     });
+}
+
+// ==== إضافة ملفات Android الافتراضية مع الكود ====
+function addDefaultAndroidFiles() {
+    if(!project['android']) project['android'] = {};
+
+    // build.gradle الرئيسي
+    project['android']['build.gradle'] = 
+`buildscript {
+    repositories { google(); mavenCentral() }
+    dependencies { classpath 'com.android.tools.build:gradle:7.4.1' }
+}
+allprojects { repositories { google(); mavenCentral() } }`;
+
+    // settings.gradle
+    project['android']['settings.gradle'] = `rootProject.name = 'MyFlutterApp'`;
+
+    // gradle/wrapper/gradle-wrapper.properties
+    project['android']['gradle'] = { 'wrapper': { 'gradle-wrapper.properties':
+`distributionBase=GRADLE_USER_HOME
+distributionPath=wrapper/dists
+distributionUrl=https\\://services.gradle.org/distributions/gradle-7.5-bin.zip
+zipStoreBase=GRADLE_USER_HOME
+zipStorePath=wrapper/dists` } };
+
+    // app/
+    project['android']['app'] = {
+        'build.gradle':
+`apply plugin: 'com.android.application'
+android {
+    compileSdkVersion 33
+    defaultConfig {
+        applicationId "com.example.myflutterapp"
+        minSdkVersion 21
+        targetSdkVersion 33
+        versionCode 1
+        versionName "1.0"
+    }
+}
+dependencies {}`,
+        'src': {
+            'main': {
+                'AndroidManifest.xml':
+`<manifest package="com.example.myflutterapp">
+<application android:label="MyFlutterApp"></application>
+</manifest>`,
+                'java': {
+                    'com': { 'example': { 'MainActivity.kt':
+`package com.example
+import android.os.Bundle
+import io.flutter.embedding.android.FlutterActivity
+class MainActivity: FlutterActivity() { override fun onCreate(savedInstanceState: Bundle?) { super.onCreate(savedInstanceState) }}` } }
+                },
+                'res': {}
+            }
+        }
+    };
 }
 </script>
 </body>
