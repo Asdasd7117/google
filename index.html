@@ -75,6 +75,7 @@ function createProject() {
     // إضافة ملفات Android الافتراضية إذا اختار المستخدم
     if(document.getElementById('addAndroidFiles').checked) {
         addDefaultAndroidFiles();
+        alert("✅ تم إنشاء مجلد android مع ملفات البناء.\n⚠️ تذكر: تحتاج لإضافة gradle-wrapper.jar يدوياً داخل android/gradle/wrapper/");
     }
 
     renderTree();
@@ -169,9 +170,19 @@ function downloadZip() {
     });
 }
 
-// ==== إضافة ملفات Android الافتراضية مع الكود ====
+// ==== إضافة ملفات Android الافتراضية مع gradlew و gradlew.bat ====
 function addDefaultAndroidFiles() {
     if(!project['android']) project['android'] = {};
+
+    // محاولة استخراج اسم المشروع من أول مستوى في الهيكل
+    let projectName = "MyFlutterApp";
+    const rootKeys = Object.keys(project);
+    if(rootKeys.length > 0) {
+        projectName = rootKeys[0]; // اسم أول مجلد كاسم المشروع
+    }
+
+    // تحويل الاسم إلى شكل مناسب للبكج
+    const packageName = "com.example." + projectName.toLowerCase();
 
     // build.gradle الرئيسي
     project['android']['build.gradle'] = 
@@ -182,15 +193,30 @@ function addDefaultAndroidFiles() {
 allprojects { repositories { google(); mavenCentral() } }`;
 
     // settings.gradle
-    project['android']['settings.gradle'] = `rootProject.name = 'MyFlutterApp'`;
+    project['android']['settings.gradle'] = `rootProject.name = '${projectName}'`;
 
-    // gradle/wrapper/gradle-wrapper.properties
-    project['android']['gradle'] = { 'wrapper': { 'gradle-wrapper.properties':
+    // gradle/wrapper/gradle-wrapper.properties + مكان فارغ للـ jar
+    project['android']['gradle'] = { 'wrapper': {
+        'gradle-wrapper.properties':
 `distributionBase=GRADLE_USER_HOME
 distributionPath=wrapper/dists
 distributionUrl=https\\://services.gradle.org/distributions/gradle-7.5-bin.zip
 zipStoreBase=GRADLE_USER_HOME
-zipStorePath=wrapper/dists` } };
+zipStorePath=wrapper/dists`,
+        'gradle-wrapper.jar': '' // ⚠️ يحتاج تنزيل يدوي
+    } };
+
+    // gradlew (لينكس/ماك)
+    project['android']['gradlew'] =
+`#!/usr/bin/env sh
+DIR="$( cd "$( dirname "$0" )" && pwd )"
+exec "$DIR/gradle/wrapper/gradle-wrapper.jar" "$@"`;
+
+    // gradlew.bat (ويندوز)
+    project['android']['gradlew.bat'] =
+`@ECHO OFF
+SET DIR=%~dp0
+"%DIR%\\gradle\\wrapper\\gradle-wrapper.jar" %*`;
 
     // app/
     project['android']['app'] = {
@@ -199,7 +225,7 @@ zipStorePath=wrapper/dists` } };
 android {
     compileSdkVersion 33
     defaultConfig {
-        applicationId "com.example.myflutterapp"
+        applicationId "${packageName}"
         minSdkVersion 21
         targetSdkVersion 33
         versionCode 1
@@ -210,15 +236,21 @@ dependencies {}`,
         'src': {
             'main': {
                 'AndroidManifest.xml':
-`<manifest package="com.example.myflutterapp">
-<application android:label="MyFlutterApp"></application>
+`<manifest package="${packageName}">
+<application android:label="${projectName}"></application>
 </manifest>`,
                 'java': {
-                    'com': { 'example': { 'MainActivity.kt':
-`package com.example
+                    'com': { 'example': { [projectName]: {
+                        'MainActivity.kt':
+`package com.example.${projectName}
 import android.os.Bundle
 import io.flutter.embedding.android.FlutterActivity
-class MainActivity: FlutterActivity() { override fun onCreate(savedInstanceState: Bundle?) { super.onCreate(savedInstanceState) }}` } }
+class MainActivity: FlutterActivity() { 
+    override fun onCreate(savedInstanceState: Bundle?) { 
+        super.onCreate(savedInstanceState) 
+    } 
+}`
+                    } } }
                 },
                 'res': {}
             }
