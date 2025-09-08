@@ -1,28 +1,92 @@
 <!DOCTYPE html>
 <html lang="ar">
 <head>
-<meta charset="UTF-8">
-<title>Flutter Project Editor - Netlify</title>
+    <meta charset="UTF-8">
+    <title>Flutter Project Editor - Netlify</title>
 
-<!-- CSS CodeMirror -->
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.14/codemirror.min.css">
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.14/theme/eclipse.min.css">
+    <!-- CSS CodeMirror -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.14/codemirror.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.14/theme/eclipse.min.css">
 
-<style>
-body { font-family: Arial; margin:20px; }
-#structureText { width:100%; height:150px; }
-ul { list-style:none; padding-left:20px; }
-button { padding:5px 10px; margin-top:5px; margin-bottom:5px; }
-#editorDiv { display:none; margin-top:10px; }
-.CodeMirror { border:1px solid #ccc; height:300px; direction:ltr; }
-.empty-file { color:red; }
-</style>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            direction: rtl;
+            background-color: #f9f9f9;
+        }
+        h2 {
+            color: #333;
+        }
+        #structureText {
+            width: 100%;
+            height: 150px;
+            resize: vertical;
+            border: 1px solid #ccc;
+            padding: 10px;
+            font-family: monospace;
+        }
+        ul {
+            list-style: none;
+            padding-right: 20px;
+        }
+        button {
+            padding: 8px 15px;
+            margin: 5px;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        #editorDiv {
+            display: none;
+            margin-top: 20px;
+            background-color: #fff;
+            padding: 15px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+        .CodeMirror {
+            border: 1px solid #ccc;
+            height: 400px;
+            direction: ltr;
+        }
+        .empty-file {
+            color: red;
+        }
+        #loading {
+            display: none;
+            color: #007bff;
+            font-weight: bold;
+            margin-top: 10px;
+        }
+        #fileTree {
+            margin-top: 10px;
+        }
+        .file-tree-item {
+            margin: 5px 0;
+        }
+        .file-tree-item button {
+            background: none;
+            color: #007bff;
+            border: none;
+            padding: 0;
+            cursor: pointer;
+        }
+        .file-tree-item button:hover {
+            text-decoration: underline;
+        }
+    </style>
 </head>
 <body>
 
 <h2>إدخال هيكل المشروع نصياً</h2>
 <textarea id="structureText" placeholder="الصق هنا الهيكل النصي للمشروع..."></textarea><br>
-<label><input type="checkbox" id="addAndroidFiles"> إضافة ملفات Android الافتراضية</label><br>
+<label><input type="checkbox" id="addAndroidFiles" checked> إضافة ملفات Android الافتراضية</label><br>
 <button onclick="createProject()">إنشاء المشروع</button>
 
 <h2>هيكل المشروع</h2>
@@ -30,16 +94,18 @@ button { padding:5px 10px; margin-top:5px; margin-bottom:5px; }
 
 <h2>تحرير الملف</h2>
 <div id="editorDiv">
-  <p>الملف: <span id="currentFile"></span></p>
-  <textarea id="fileEditor"></textarea><br>
-  <button onclick="saveFile()">حفظ التعديلات</button>
+    <p>الملف الحالي: <span id="currentFile"></span></p>
+    <textarea id="fileEditor"></textarea><br>
+    <button onclick="saveFile()">حفظ التعديلات</button>
 </div>
 
 <h2>ضغط المشروع</h2>
 <button onclick="downloadZip()">إنشاء ZIP وتحميل</button>
+<button onclick="buildApk()">إنشاء APK وتحميل</button>
+<div id="loading">جارٍ إنشاء الملف...</div>
 
 <!-- JS Libraries -->
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.11.0/jszip.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.14/codemirror.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.14/mode/javascript/javascript.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.14/mode/clike/clike.min.js"></script>
@@ -60,23 +126,25 @@ function createProject() {
     const text = document.getElementById('structureText').value;
     const lines = text.split('\n');
     project = {};
-    const stack = [{obj: project, level:-1}];
+    const stack = [{ obj: project, level: -1 }];
 
-    lines.forEach(line=>{
-        if(!line.trim()) return;
+    lines.forEach(line => {
+        if (!line.trim()) return;
         const spaces = line.match(/^\s*/)[0].length;
         const name = line.trim();
-        while(stack.length && stack[stack.length-1].level >= spaces) stack.pop();
-        const parent = stack[stack.length-1].obj;
-        if(name.endsWith('/') || !name.includes('.')) parent[name.replace(/\/$/,'')] = {};
+        while (stack.length && stack[stack.length - 1].level >= spaces) stack.pop();
+        const parent = stack[stack.length - 1].obj;
+        if (name.endsWith('/') || !name.includes('.')) parent[name.replace(/\/$/, '')] = {};
         else parent[name] = '';
-        if(name.endsWith('/') || !name.includes('.')) stack.push({obj: parent[name.replace(/\/$/,'')], level:spaces});
+        if (name.endsWith('/') || !name.includes('.')) stack.push({ obj: parent[name.replace(/\/$/, '')], level: spaces });
     });
 
     // إضافة ملفات Android الافتراضية إذا اختار المستخدم
-    if(document.getElementById('addAndroidFiles').checked) {
+    if (document.getElementById('addAndroidFiles').checked) {
         addDefaultAndroidFiles();
-        alert("✅ تم إنشاء مجلد android مع ملفات البناء.\n⚠️ تذكر: تحتاج لإضافة gradle-wrapper.jar يدوياً داخل android/gradle/wrapper/");
+        alert("✅ تم إنشاء مجلد android مع ملفات البناء.\n⚠️ تذكر: تحتاج لإضافة gradle-wrapper.jar يدوياً داخل android/gradle/wrapper/ من https://services.gradle.org/");
+    } else {
+        alert("✅ تم إنشاء المشروع بنجاح!");
     }
 
     renderTree();
@@ -86,21 +154,22 @@ function createProject() {
 function renderTree() {
     const container = document.getElementById('fileTree');
     container.innerHTML = '';
-    function buildTree(obj, path='') {
+    function buildTree(obj, path = '') {
         const ul = document.createElement('ul');
-        for(const key in obj) {
+        for (const key in obj) {
             const li = document.createElement('li');
+            li.classList.add('file-tree-item');
             const fullPath = path + key;
-            if(typeof obj[key]==='object') {
+            if (typeof obj[key] === 'object') {
                 const subUl = buildTree(obj[key], fullPath + '/');
-                if(subUl.children.length === 0) li.classList.add('empty-file');
+                if (subUl.children.length === 0) li.classList.add('empty-file');
                 li.innerHTML = `<strong>${key}/</strong>`;
                 li.appendChild(subUl);
             } else {
                 const btn = document.createElement('button');
                 btn.textContent = key;
-                if(obj[key].trim()==='') btn.style.color='red';
-                btn.onclick = ()=>openFile(fullPath);
+                if (obj[key].trim() === '') btn.style.color = 'red';
+                btn.onclick = () => openFile(fullPath);
                 li.appendChild(btn);
             }
             ul.appendChild(li);
@@ -113,86 +182,119 @@ function renderTree() {
 // ==== فتح الملف في المحرر ====
 function openFile(path) {
     currentFile = path;
-    document.getElementById('editorDiv').style.display='block';
+    document.getElementById('editorDiv').style.display = 'block';
     document.getElementById('currentFile').textContent = path;
 
     const parts = path.split('/');
     let obj = project;
-    for(let i=0;i<parts.length;i++) obj = obj[parts[i]];
+    for (let i = 0; i < parts.length; i++) obj = obj[parts[i]];
 
-    editor.setValue(obj);
-    if(path.endsWith('.kt')) editor.setOption('mode','text/x-kotlin');
-    else if(path.endsWith('.dart')) editor.setOption('mode','dart');
-    else editor.setOption('mode','javascript');
+    editor.setValue(obj || '');
+    if (path.endsWith('.kt')) editor.setOption('mode', 'text/x-kotlin');
+    else if (path.endsWith('.dart')) editor.setOption('mode', 'dart');
+    else if (path.endsWith('.xml')) editor.setOption('mode', 'xml');
+    else if (path.endsWith('.gradle')) editor.setOption('mode', 'groovy');
+    else editor.setOption('mode', 'javascript');
 }
 
 // ==== حفظ الملف ====
 function saveFile() {
     const parts = currentFile.split('/');
     let obj = project;
-    for(let i=0;i<parts.length-1;i++) obj = obj[parts[i]];
-    obj[parts[parts.length-1]] = editor.getValue();
-    alert('تم حفظ التعديلات!');
+    for (let i = 0; i < parts.length - 1; i++) obj = obj[parts[i]];
+    obj[parts[parts.length - 1]] = editor.getValue();
+    alert('✅ تم حفظ التعديلات!');
     renderTree();
 }
 
 // ==== تحديث جميع الملفات المفتوحة قبل ZIP ====
-function updateAllFilesInProject(obj, path='') {
-    for(const key in obj) {
-        if(typeof obj[key]==='object') {
+function updateAllFilesInProject(obj, path = '') {
+    for (const key in obj) {
+        if (typeof obj[key] === 'object') {
             updateAllFilesInProject(obj[key], path + key + '/');
         } else {
-            if(currentFile === path + key) {
+            if (currentFile === path + key) {
                 obj[key] = editor.getValue();
             }
         }
     }
 }
 
-// ==== إنشاء ZIP لجميع الملفات والمجلدات حتى لو فارغة أو ملف واحد ====
+// ==== إنشاء ZIP لجميع الملفات والمجلدات ====
 function downloadZip() {
-    updateAllFilesInProject(project); // ✅ تحديث آخر التعديلات
-    const zip = new JSZip();
+    try {
+        updateAllFilesInProject(project);
+        const zip = new JSZip();
 
-    function addFiles(obj, folder) {
-        for(const key in obj) {
-            if(typeof obj[key]==='object') {
-                const sub = folder.folder(key);
-                addFiles(obj[key], sub);
-            } else {
-                folder.file(key, obj[key] || '');
+        function addFiles(obj, folder) {
+            for (const key in obj) {
+                if (typeof obj[key] === 'object') {
+                    const sub = folder.folder(key);
+                    addFiles(obj[key], sub);
+                } else {
+                    folder.file(key, obj[key] || '');
+                }
             }
         }
+
+        addFiles(project, zip);
+        document.getElementById('loading').style.display = 'block';
+
+        zip.generateAsync({ type: "blob" }).then(function (content) {
+            const a = document.createElement('a');
+            const url = URL.createObjectURL(content);
+            a.href = url;
+            a.download = "project.zip";
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+            document.getElementById('loading').style.display = 'none';
+            alert('✅ تم إنشاء ملف ZIP وتحميله بنجاح!');
+        }).catch(function (error) {
+            console.error('خطأ أثناء إنشاء ZIP:', error);
+            alert('❌ فشل إنشاء ملف ZIP. تحقق من وحدة التحكم لمزيد من التفاصيل.');
+            document.getElementById('loading').style.display = 'none';
+        });
+    } catch (error) {
+        console.error('خطأ عام:', error);
+        alert('❌ حدث خطأ أثناء إنشاء الملف المضغوط. تحقق من وحدة التحكم.');
+        document.getElementById('loading').style.display = 'none';
     }
+}
 
-    addFiles(project, zip);
-
-    zip.generateAsync({type:"blob"}).then(function(content){
-        const a = document.createElement('a');
-        a.href = URL.createObjectURL(content);
-        a.download = "project.zip";
-        a.click();
-    });
+// ==== إنشاء APK (توجيه يدوي أو عبر API لاحقًا) ====
+function buildApk() {
+    alert('⚠️ إنشاء ملف APK يتطلب بيئة Flutter SDK وAndroid SDK. اتبع الخطوات التالية:\n1. انقر على "إنشاء ZIP وتحميل" لتحميل المشروع.\n2. فك ضغط الملف على جهازك.\n3. تأكد من تثبيت Flutter SDK وAndroid SDK.\n4. افتح طرفية في مجلد المشروع وشغّل الأمر:\n   flutter build apk --release\nسيتم إنشاء APK في build/app/outputs/flutter-apk/app-release.apk\n\n📝 ملاحظة: إذا كنت بحاجة إلى دعم تلقائي لإنشاء APK، يجب إعداد خادم مع API.');
 }
 
 // ==== إضافة ملفات Android الافتراضية + gradlew ====
 function addDefaultAndroidFiles() {
-    if(!project['android']) project['android'] = {};
+    if (!project['android']) project['android'] = {};
 
     let projectName = "MyFlutterApp";
     const rootKeys = Object.keys(project);
-    if(rootKeys.length > 0) projectName = rootKeys[0];
+    if (rootKeys.length > 0) projectName = rootKeys[0];
 
     const packageName = "com.example." + projectName.toLowerCase();
 
     project['android']['build.gradle'] = 
 `buildscript {
     repositories { google(); mavenCentral() }
-    dependencies { classpath 'com.android.tools.build:gradle:7.4.1' }
+    dependencies { classpath 'com.android.tools.build:gradle:7.4.2' }
 }
 allprojects { repositories { google(); mavenCentral() } }`;
 
-    project['android']['settings.gradle'] = `rootProject.name = '${projectName}'`;
+    project['android']['settings.gradle'] = 
+`pluginManagement {
+    repositories {
+        google()
+        mavenCentral()
+        gradlePluginPortal()
+    }
+}
+rootProject.name = '${projectName}'
+include ':app'`;
 
     project['android']['gradle'] = { 'wrapper': {
         'gradle-wrapper.properties':
@@ -217,6 +319,7 @@ SET DIR=%~dp0
     project['android']['app'] = {
         'build.gradle':
 `apply plugin: 'com.android.application'
+
 android {
     compileSdkVersion 33
     defaultConfig {
@@ -226,31 +329,93 @@ android {
         versionCode 1
         versionName "1.0"
     }
+    buildTypes {
+        release {
+            minifyEnabled false
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+        }
+    }
 }
-dependencies {}`,
+dependencies {
+    implementation 'androidx.core:core:1.9.0'
+}`,
         'src': {
             'main': {
                 'AndroidManifest.xml':
-`<manifest package="${packageName}">
-<application android:label="${projectName}"></application>
+`<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    package="${packageName}">
+    <application
+        android:label="${projectName}"
+        android:icon="@mipmap/ic_launcher">
+        <activity
+            android:name=".MainActivity"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN"/>
+                <category android:name="android.intent.category.LAUNCHER"/>
+            </intent-filter>
+        </activity>
+    </application>
 </manifest>`,
                 'java': {
-                    'com': { 'example': { [projectName]: {
+                    'com': { 'example': { [projectName.toLowerCase()]: {
                         'MainActivity.kt':
-`package com.example.${projectName}
-import android.os.Bundle
+`package ${packageName}
 import io.flutter.embedding.android.FlutterActivity
-class MainActivity: FlutterActivity() { 
-    override fun onCreate(savedInstanceState: Bundle?) { 
-        super.onCreate(savedInstanceState) 
-    } 
+
+class MainActivity: FlutterActivity() {
 }`
                     } } }
                 },
-                'res': {}
+                'res': {
+                    'mipmap': {
+                        'ic_launcher.png': '' // يحتاج إلى إضافة أيقونة يدويًا
+                    }
+                }
             }
         }
     };
+
+    // إضافة ملف pubspec.yaml إذا لم يكن موجودًا
+    if (!project['pubspec.yaml']) {
+        project['pubspec.yaml'] =
+`name: ${projectName.toLowerCase()}
+description: A new Flutter project.
+version: 1.0.0+1
+environment:
+  sdk: '>=2.18.0 <3.0.0'
+dependencies:
+  flutter:
+    sdk: flutter
+flutter:
+  uses-material-design: true
+`;
+    }
+
+    // إضافة ملف main.dart إذا لم يكن موجودًا
+    if (!project['lib']) project['lib'] = {};
+    if (!project['lib']['main.dart']) {
+        project['lib']['main.dart'] =
+`import 'package:flutter/material.dart';
+
+void main() {
+  runApp(MyApp());
+}
+
+class MyApp extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return MaterialApp(
+      title: '${projectName}',
+      home: Scaffold(
+        appBar: AppBar(title: Text('${projectName}')),
+        body: Center(child: Text('Hello, Flutter!')),
+      ),
+    );
+  }
+}
+`;
+    }
 }
 </script>
 </body>
