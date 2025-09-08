@@ -52,7 +52,7 @@ let editor = CodeMirror.fromTextArea(document.getElementById("fileEditor"), {
     lineNumbers: true,
     mode: "dart",
     theme: "eclipse",
-    direction: "ltr" // أرقام الأسطر على اليسار
+    direction: "ltr"
 });
 
 // ==== إنشاء المشروع من النص ====
@@ -93,13 +93,13 @@ function renderTree() {
             const fullPath = path + key;
             if(typeof obj[key]==='object') {
                 const subUl = buildTree(obj[key], fullPath + '/');
-                if(subUl.children.length === 0) li.classList.add('empty-file'); // مجلد فارغ
+                if(subUl.children.length === 0) li.classList.add('empty-file');
                 li.innerHTML = `<strong>${key}/</strong>`;
                 li.appendChild(subUl);
             } else {
                 const btn = document.createElement('button');
                 btn.textContent = key;
-                if(obj[key].trim()==='') btn.style.color='red'; // ملف فارغ باللون الأحمر
+                if(obj[key].trim()==='') btn.style.color='red';
                 btn.onclick = ()=>openFile(fullPath);
                 li.appendChild(btn);
             }
@@ -136,7 +136,7 @@ function saveFile() {
     renderTree();
 }
 
-// ==== إنشاء ZIP مع المجلدات والملفات الفارغة ====
+// ==== إنشاء ZIP لجميع الملفات والمجلدات حتى لو فارغة أو ملف واحد ====
 function downloadZip() {
     const zip = new JSZip();
 
@@ -146,7 +146,7 @@ function downloadZip() {
                 const sub = folder.folder(key);
                 addFiles(obj[key], sub);
             } else {
-                folder.file(key, obj[key]);
+                folder.file(key, obj[key] || '');
             }
         }
     }
