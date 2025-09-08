@@ -110,6 +110,8 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.14/mode/javascript/javascript.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.14/mode/clike/clike.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.14/mode/dart/dart.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.14/mode/xml/xml.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.14/mode/groovy/groovy.min.js"></script>
 
 <script>
 let project = {};
@@ -142,7 +144,7 @@ function createProject() {
     // إضافة ملفات Android الافتراضية إذا اختار المستخدم
     if (document.getElementById('addAndroidFiles').checked) {
         addDefaultAndroidFiles();
-        alert("✅ تم إنشاء مجلد android مع ملفات البناء.\n⚠️ تذكر: تحتاج لإضافة gradle-wrapper.jar يدوياً داخل android/gradle/wrapper/ من https://services.gradle.org/");
+        alert("✅ تم إنشاء مجلد android مع ملفات البناء بناءً على بنية التطبيق.\n⚠️ تذكر: تحتاج لإضافة gradle-wrapper.jar يدوياً داخل android/gradle/wrapper/ من https://services.gradle.org/");
     } else {
         alert("✅ تم إنشاء المشروع بنجاح!");
     }
@@ -265,19 +267,38 @@ function downloadZip() {
 
 // ==== إنشاء APK (توجيه يدوي أو عبر API لاحقًا) ====
 function buildApk() {
-    alert('⚠️ إنشاء ملف APK يتطلب بيئة Flutter SDK وAndroid SDK. اتبع الخطوات التالية:\n1. انقر على "إنشاء ZIP وتحميل" لتحميل المشروع.\n2. فك ضغط الملف على جهازك.\n3. تأكد من تثبيت Flutter SDK وAndroid SDK.\n4. افتح طرفية في مجلد المشروع وشغّل الأمر:\n   flutter build apk --release\nسيتم إنشاء APK في build/app/outputs/flutter-apk/app-release.apk\n\n📝 ملاحظة: إذا كنت بحاجة إلى دعم تلقائي لإنشاء APK، يجب إعداد خادم مع API.');
+    alert('⚠️ إنشاء ملف APK يتطلب بيئة Flutter SDK وAndroid SDK. اتبع الخطوات التالية:\n1. انقر على "إنشاء ZIP وتحميل" لتحميل المشروع.\n2. فك ضغط الملف على جهازك.\n3. أضف ملف gradle-wrapper.jar إلى android/gradle/wrapper/ من https://services.gradle.org/.\n4. تأكد من تثبيت Flutter SDK وAndroid SDK.\n5. افتح طرفية في مجلد المشروع وشغّل الأمر:\n   flutter build apk --release\nسيتم إنشاء APK في build/app/outputs/flutter-apk/app-release.apk\n\n📝 ملاحظة: إذا كنت بحاجة إلى دعم تلقائي لإنشاء APK، يجب إعداد خادم مع API.');
 }
 
-// ==== إضافة ملفات Android الافتراضية + gradlew ====
+// ==== استخراج اسم التطبيق واسم الحزمة من pubspec.yaml ====
+function extractAppInfo() {
+    let projectName = "MyFlutterApp";
+    let packageName = "com.example.myflutterapp";
+
+    if (project['pubspec.yaml']) {
+        const pubspec = project['pubspec.yaml'];
+        const nameMatch = pubspec.match(/name:\s*(\w+)/);
+        const packageMatch = pubspec.match(/package:\s*([\w.]+)/);
+        if (nameMatch) projectName = nameMatch[1];
+        if (packageMatch) packageName = packageMatch[1];
+    } else {
+        const rootKeys = Object.keys(project);
+        if (rootKeys.length > 0 && rootKeys[0] !== 'android') {
+            projectName = rootKeys[0];
+            packageName = `com.example.${projectName.toLowerCase()}`;
+        }
+    }
+
+    return { projectName, packageName };
+}
+
+// ==== إضافة ملفات Android الافتراضية بناءً على بنية التطبيق ====
 function addDefaultAndroidFiles() {
     if (!project['android']) project['android'] = {};
 
-    let projectName = "MyFlutterApp";
-    const rootKeys = Object.keys(project);
-    if (rootKeys.length > 0) projectName = rootKeys[0];
+    const { projectName, packageName } = extractAppInfo();
 
-    const packageName = "com.example." + projectName.toLowerCase();
-
+    // ملف build.gradle الرئيسي
     project['android']['build.gradle'] = 
 `buildscript {
     repositories { google(); mavenCentral() }
@@ -285,6 +306,7 @@ function addDefaultAndroidFiles() {
 }
 allprojects { repositories { google(); mavenCentral() } }`;
 
+    // ملف settings.gradle
     project['android']['settings.gradle'] = 
 `pluginManagement {
     repositories {
@@ -296,6 +318,7 @@ allprojects { repositories { google(); mavenCentral() } }`;
 rootProject.name = '${projectName}'
 include ':app'`;
 
+    // ملف gradle-wrapper.properties
     project['android']['gradle'] = { 'wrapper': {
         'gradle-wrapper.properties':
 `distributionBase=GRADLE_USER_HOME
@@ -306,16 +329,19 @@ zipStorePath=wrapper/dists`,
         'gradle-wrapper.jar': '' // يحتاج تنزيل يدوي
     } };
 
+    // ملف gradlew
     project['android']['gradlew'] =
 `#!/usr/bin/env sh
 DIR="$( cd "$( dirname "$0" )" && pwd )"
 exec "$DIR/gradle/wrapper/gradle-wrapper.jar" "$@"`;
 
+    // ملف gradlew.bat
     project['android']['gradlew.bat'] =
 `@ECHO OFF
 SET DIR=%~dp0
 "%DIR%\\gradle\\wrapper\\gradle-wrapper.jar" %*`;
 
+    // ملف app/build.gradle
     project['android']['app'] = {
         'build.gradle':
 `apply plugin: 'com.android.application'
