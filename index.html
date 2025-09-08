@@ -136,8 +136,18 @@ function saveFile() {
     renderTree();
 }
 
+// ==== تحديث الملف الحالي من CodeMirror قبل ZIP ====
+function updateCurrentFileInProject() {
+    if(!currentFile) return;
+    const parts = currentFile.split('/');
+    let obj = project;
+    for(let i=0;i<parts.length-1;i++) obj = obj[parts[i]];
+    obj[parts[parts.length-1]] = editor.getValue();
+}
+
 // ==== إنشاء ZIP لجميع الملفات والمجلدات حتى لو فارغة أو ملف واحد ====
 function downloadZip() {
+    updateCurrentFileInProject(); // ✅ تحديث آخر التعديلات
     const zip = new JSZip();
 
     function addFiles(obj, folder) {
