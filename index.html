@@ -144,7 +144,7 @@ function createProject() {
     // إضافة ملفات Android الافتراضية إذا اختار المستخدم
     if (document.getElementById('addAndroidFiles').checked) {
         addDefaultAndroidFiles();
-        alert("✅ تم إنشاء مجلد android مع ملفات البناء بناءً على بنية التطبيق.\n⚠️ تذكر: تحتاج لإضافة gradle-wrapper.jar يدوياً داخل android/gradle/wrapper/ من https://services.gradle.org/");
+        alert("✅ تم إنشاء مجلد android مع ملفات البناء الحديثة بناءً على بنية التطبيق.\n⚠️ تذكر: تحتاج لإضافة gradle-wrapper.jar يدوياً داخل android/gradle/wrapper/ من https://services.gradle.org/");
     } else {
         alert("✅ تم إنشاء المشروع بنجاح!");
     }
@@ -267,7 +267,7 @@ function downloadZip() {
 
 // ==== إنشاء APK (توجيه يدوي أو عبر API لاحقًا) ====
 function buildApk() {
-    alert('⚠️ إنشاء ملف APK يتطلب بيئة Flutter SDK وAndroid SDK. اتبع الخطوات التالية:\n1. انقر على "إنشاء ZIP وتحميل" لتحميل المشروع.\n2. فك ضغط الملف على جهازك.\n3. أضف ملف gradle-wrapper.jar إلى android/gradle/wrapper/ من https://services.gradle.org/.\n4. تأكد من تثبيت Flutter SDK وAndroid SDK.\n5. افتح طرفية في مجلد المشروع وشغّل الأمر:\n   flutter build apk --release\nسيتم إنشاء APK في build/app/outputs/flutter-apk/app-release.apk\n\n📝 ملاحظة: إذا كنت بحاجة إلى دعم تلقائي لإنشاء APK، يجب إعداد خادم مع API.');
+    alert('⚠️ إنشاء ملف APK يتطلب بيئة Flutter SDK وAndroid SDK حديثة. اتبع الخطوات التالية:\n1. انقر على "إنشاء ZIP وتحميل" لتحميل المشروع.\n2. فك ضغط الملف على جهازك.\n3. أضف ملف gradle-wrapper.jar إلى android/gradle/wrapper/ من https://services.gradle.org/.\n4. تأكد من تثبيت Flutter SDK (إصدار 3.24 أو أحدث) وAndroid SDK مع API 36.\n5. افتح طرفية في مجلد المشروع وشغّل الأمر:\n   flutter build apk --release\nسيتم إنشاء APK في build/app/outputs/flutter-apk/app-release.apk\n\n📝 ملاحظة: إذا كنت بحاجة إلى دعم تلقائي لإنشاء APK، يجب إعداد خادم مع API.');
 }
 
 // ==== استخراج اسم التطبيق واسم الحزمة من pubspec.yaml ====
@@ -306,8 +306,8 @@ function addDefaultAndroidFiles() {
         mavenCentral()
     }
     dependencies {
-        classpath 'com.android.tools.build:gradle:8.5.2'
-        classpath 'org.jetbrains.kotlin:kotlin-gradle-plugin:2.0.20'
+        classpath 'com.android.tools.build:gradle:8.13.0'
+        classpath 'org.jetbrains.kotlin:kotlin-gradle-plugin:2.2.10'
     }
 }
 allprojects {
@@ -326,8 +326,8 @@ allprojects {
         gradlePluginPortal()
     }
     plugins {
-        id 'com.android.application' version '8.5.2' apply false
-        id 'org.jetbrains.kotlin.android' version '2.0.20' apply false
+        id 'com.android.application' version '8.13.0' apply false
+        id 'org.jetbrains.kotlin.android' version '2.2.10' apply false
     }
 }
 rootProject.name = '${projectName}'
@@ -338,7 +338,7 @@ include ':app'`;
         'gradle-wrapper.properties':
 `distributionBase=GRADLE_USER_HOME
 distributionPath=wrapper/dists
-distributionUrl=https\\://services.gradle.org/distributions/gradle-8.7-bin.zip
+distributionUrl=https\\://services.gradle.org/distributions/gradle-8.13-bin.zip
 zipStoreBase=GRADLE_USER_HOME
 zipStorePath=wrapper/dists`,
         'gradle-wrapper.jar': '' // يحتاج تنزيل يدوي
@@ -366,12 +366,12 @@ SET DIR=%~dp0
 
 android {
     namespace '${packageName}'
-    compileSdk 35
+    compileSdk 36
 
     defaultConfig {
         applicationId '${packageName}'
         minSdk 21
-        targetSdk 35
+        targetSdk 36
         versionCode 1
         versionName "1.0"
 
@@ -397,7 +397,7 @@ android {
 
 dependencies {
     implementation 'androidx.core:core:1.13.1'
-    implementation 'androidx.appcompat:appcompat:1.7.0'
+    implementation 'androidx.appcompat:appcompat:1.7.1'
     implementation 'com.google.android.material:material:1.12.0'
     testImplementation 'junit:junit:4.13.2'
     androidTestImplementation 'androidx.test.ext:junit:1.2.1'
@@ -428,7 +428,7 @@ dependencies {
         android:allowBackup="true"
         android:supportsRtl="true"
         android:theme="@style/Theme.AppCompat.Light.NoActionBar"
-        tools:targetApi="35">
+        tools:targetApi="36">
 
         <activity
             android:name=".MainActivity"
@@ -484,7 +484,7 @@ class MainActivity : FlutterActivity() {
 description: A new Flutter project.
 version: 1.0.0+1
 environment:
-  sdk: '>=3.0.0 <4.0.0'
+  sdk: '>=3.5.0 <4.0.0'
 dependencies:
   flutter:
     sdk: flutter
