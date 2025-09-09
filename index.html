@@ -301,10 +301,21 @@ function addDefaultAndroidFiles() {
     // ملف build.gradle الرئيسي
     project['android']['build.gradle'] = 
 `buildscript {
-    repositories { google(); mavenCentral() }
-    dependencies { classpath 'com.android.tools.build:gradle:7.4.2' }
+    repositories {
+        google()
+        mavenCentral()
+    }
+    dependencies {
+        classpath 'com.android.tools.build:gradle:8.5.2'
+        classpath 'org.jetbrains.kotlin:kotlin-gradle-plugin:2.0.20'
+    }
 }
-allprojects { repositories { google(); mavenCentral() } }`;
+allprojects {
+    repositories {
+        google()
+        mavenCentral()
+    }
+}`;
 
     // ملف settings.gradle
     project['android']['settings.gradle'] = 
@@ -313,6 +324,10 @@ allprojects { repositories { google(); mavenCentral() } }`;
         google()
         mavenCentral()
         gradlePluginPortal()
+    }
+    plugins {
+        id 'com.android.application' version '8.5.2' apply false
+        id 'org.jetbrains.kotlin.android' version '2.0.20' apply false
     }
 }
 rootProject.name = '${projectName}'
@@ -323,79 +338,139 @@ include ':app'`;
         'gradle-wrapper.properties':
 `distributionBase=GRADLE_USER_HOME
 distributionPath=wrapper/dists
-distributionUrl=https\\://services.gradle.org/distributions/gradle-7.5-bin.zip
+distributionUrl=https\\://services.gradle.org/distributions/gradle-8.7-bin.zip
 zipStoreBase=GRADLE_USER_HOME
 zipStorePath=wrapper/dists`,
         'gradle-wrapper.jar': '' // يحتاج تنزيل يدوي
     } };
 
     // ملف gradlew
-    project['android']['gradlew'] =
+    project['android']['gradlew'] = 
 `#!/usr/bin/env sh
 DIR="$( cd "$( dirname "$0" )" && pwd )"
 exec "$DIR/gradle/wrapper/gradle-wrapper.jar" "$@"`;
 
     // ملف gradlew.bat
-    project['android']['gradlew.bat'] =
+    project['android']['gradlew.bat'] = 
 `@ECHO OFF
 SET DIR=%~dp0
 "%DIR%\\gradle\\wrapper\\gradle-wrapper.jar" %*`;
 
-    // ملف app/build.gradle
+    // ملفات app
     project['android']['app'] = {
         'build.gradle':
-`apply plugin: 'com.android.application'
+`plugins {
+    id 'com.android.application'
+    id 'org.jetbrains.kotlin.android'
+}
 
 android {
-    compileSdkVersion 33
+    namespace '${packageName}'
+    compileSdk 35
+
     defaultConfig {
-        applicationId "${packageName}"
-        minSdkVersion 21
-        targetSdkVersion 33
+        applicationId '${packageName}'
+        minSdk 21
+        targetSdk 35
         versionCode 1
         versionName "1.0"
+
+        testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
     }
+
     buildTypes {
         release {
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
         }
     }
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+
+    kotlinOptions {
+        jvmTarget = '17'
+    }
 }
+
 dependencies {
-    implementation 'androidx.core:core:1.9.0'
+    implementation 'androidx.core:core:1.13.1'
+    implementation 'androidx.appcompat:appcompat:1.7.0'
+    implementation 'com.google.android.material:material:1.12.0'
+    testImplementation 'junit:junit:4.13.2'
+    androidTestImplementation 'androidx.test.ext:junit:1.2.1'
+    androidTestImplementation 'androidx.test.espresso:espresso-core:3.6.1'
 }`,
+        'proguard-rules.pro':
+`# Add project specific ProGuard rules here.
+# By default, the flags in this file are appended to flags specified
+# in the Android SDK tools proguard folder.
+-keep class io.flutter.** { *; }
+-keep class androidx.** { *; }
+-dontwarn io.flutter.**
+-dontwarn androidx.**
+`,
         'src': {
             'main': {
                 'AndroidManifest.xml':
 `<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
     package="${packageName}">
+
+    <!-- الأذونات الأساسية المطلوبة لتطبيق Flutter -->
+    <uses-permission android:name="android.permission.INTERNET" />
+
     <application
         android:label="${projectName}"
-        android:icon="@mipmap/ic_launcher">
+        android:icon="@mipmap/ic_launcher"
+        android:allowBackup="true"
+        android:supportsRtl="true"
+        android:theme="@style/Theme.AppCompat.Light.NoActionBar"
+        tools:targetApi="35">
+
         <activity
             android:name=".MainActivity"
-            android:exported="true">
+            android:exported="true"
+            android:configChanges="orientation|keyboardHidden|screenSize|locale|layoutDirection"
+            android:windowSoftInputMode="adjustResize">
             <intent-filter>
-                <action android:name="android.intent.action.MAIN"/>
-                <category android:name="android.intent.category.LAUNCHER"/>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+
+        <!-- تحديد توافق Flutter مع Android -->
+        <meta-data
+            android:name="flutterEmbedding"
+            android:value="2" />
     </application>
+
 </manifest>`,
                 'java': {
                     'com': { 'example': { [projectName.toLowerCase()]: {
                         'MainActivity.kt':
 `package ${packageName}
+
 import io.flutter.embedding.android.FlutterActivity
 
-class MainActivity: FlutterActivity() {
+class MainActivity : FlutterActivity() {
 }`
                     } } }
                 },
                 'res': {
                     'mipmap': {
                         'ic_launcher.png': '' // يحتاج إلى إضافة أيقونة يدويًا
+                    },
+                    'values': {
+                        'styles.xml':
+`<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <style name="AppTheme" parent="Theme.AppCompat.Light.NoActionBar">
+        <!-- Customize your theme here -->
+    </style>
+</resources>`
                     }
                 }
             }
@@ -409,10 +484,11 @@ class MainActivity: FlutterActivity() {
 description: A new Flutter project.
 version: 1.0.0+1
 environment:
-  sdk: '>=2.18.0 <3.0.0'
+  sdk: '>=3.0.0 <4.0.0'
 dependencies:
   flutter:
     sdk: flutter
+  cupertino_icons: ^1.0.8
 flutter:
   uses-material-design: true
 `;
@@ -433,6 +509,10 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       title: '${projectName}',
+      theme: ThemeData(
+        primarySwatch: Colors.blue,
+        useMaterial3: true,
+      ),
       home: Scaffold(
         appBar: AppBar(title: Text('${projectName}')),
         body: Center(child: Text('Hello, Flutter!')),
